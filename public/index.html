@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Training Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ── Écran de connexion ── -->
+  <div id="screen-login" class="screen">
+    <div class="login-wrap">
+      <div class="login-eyebrow">Sub 40 · 11 oct 2026</div>
+      <h1 class="login-title">Training<br>Dashboard</h1>
+      <p class="login-sub">Connecte Strava pour visualiser<br>ta progression semaine par semaine.</p>
+      <a href="/auth/strava" class="btn-strava">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/></svg>
+        Connecter Strava
+      </a>
+      <div id="login-error" class="login-error hidden">Connexion refusée. <a href="/auth/strava">Réessayer</a></div>
+    </div>
+  </div>
+
+  <!-- ── Dashboard principal ── -->
+  <div id="screen-dashboard" class="screen hidden">
+
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <span class="header-name" id="athlete-name">—</span>
+        <span class="header-tag">10km · sub 40</span>
+      </div>
+      <div class="header-right">
+        <div class="race-countdown">
+          <span class="countdown-num" id="days-count">—</span>
+          <span class="countdown-label">jours</span>
+        </div>
+        <button class="btn-refresh" id="btn-refresh" title="Actualiser les données">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Semaine en cours -->
+    <section class="section-current">
+      <div class="section-label">Semaine en cours · <span id="current-week-label">S—</span></div>
+      <div class="cards-row" id="cards-current">
+        <div class="metric-card" id="card-km">
+          <div class="metric-val" id="cur-km">—</div>
+          <div class="metric-name">km réalisés</div>
+          <div class="metric-target" id="cur-km-target">— prévu</div>
+          <div class="progress-bar"><div class="progress-fill" id="prog-km"></div></div>
+        </div>
+        <div class="metric-card" id="card-runs">
+          <div class="metric-val" id="cur-runs">—</div>
+          <div class="metric-name">sorties</div>
+          <div class="metric-target" id="cur-runs-target">— prévues</div>
+          <div class="progress-bar"><div class="progress-fill" id="prog-runs"></div></div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-val" id="cur-pace">—</div>
+          <div class="metric-name">allure moy.</div>
+          <div class="metric-target">cible ≤ 4:00</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-val" id="cur-hr">—</div>
+          <div class="metric-name">FC moy. (bpm)</div>
+          <div class="metric-target">zone 2–4</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-val" id="cur-time">—</div>
+          <div class="metric-name">temps total</div>
+          <div class="metric-target">—</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-val" id="cur-elev">—</div>
+          <div class="metric-name">dénivelé (m)</div>
+          <div class="metric-target">cumulé</div>
+        </div>
+      </div>
+
+      <!-- Note du plan -->
+      <div class="plan-note" id="plan-note"></div>
+    </section>
+
+    <!-- Graphique progression -->
+    <section class="section-chart">
+      <div class="section-label">Progression · km/semaine <span class="chart-legend"><span class="dot dot-real"></span>Réel <span class="dot dot-plan"></span>Plan</span></div>
+      <div class="chart-wrap">
+        <canvas id="chart-progress" height="160"></canvas>
+      </div>
+    </section>
+
+    <!-- Historique semaines -->
+    <section class="section-history">
+      <div class="section-label">Historique des semaines</div>
+      <div class="history-table-wrap">
+        <table class="history-table" id="history-table">
+          <thead>
+            <tr>
+              <th>Sem.</th>
+              <th>Phase</th>
+              <th>Sorties</th>
+              <th>Km réalisés</th>
+              <th>Plan (km)</th>
+              <th>Écart</th>
+              <th>Allure</th>
+              <th>FC</th>
+              <th>Dénivelé</th>
+            </tr>
+          </thead>
+          <tbody id="history-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Dernières sorties -->
+    <section class="section-runs">
+      <div class="section-label">Dernières sorties</div>
+      <div class="runs-list" id="runs-list"></div>
+    </section>
+
+    <div class="cache-hint" id="cache-hint"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
