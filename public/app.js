@@ -400,6 +400,8 @@ const localCache = {
 
 const $ = id => document.getElementById(id);
 let chartInstance = null;
+let lastData = null;
+let currentView = 'weekly'; // 'weekly' | 'monthly'
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 (async function init() {
@@ -437,6 +439,22 @@ let chartInstance = null;
 
   // Rendu du programme (statique, pas besoin d'API)
   renderProgramme();
+
+  // Toggle Hebdo / Mensuel
+  const toggle = $('view-toggle');
+  if (toggle) {
+    toggle.addEventListener('click', e => {
+      const btn = e.target.closest('.view-toggle-btn');
+      if (!btn || btn.classList.contains('active')) return;
+      toggle.querySelectorAll('.view-toggle-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentView = btn.dataset.view;
+      if (lastData) {
+        renderChart(lastData.weeks, lastData.plan);
+        renderHistory(lastData.weeks);
+      }
+    });
+  }
 })();
 
 // ── Chargement activités ──────────────────────────────────────────────────────
@@ -462,6 +480,7 @@ async function loadActivities(force = false) {
 
 // ── Rendu principal ───────────────────────────────────────────────────────────
 function renderAll(data) {
+  lastData = data;
   const { weeks, currentWeek, currentPlanWeek, plan, daysUntilRace } = data;
   $('days-count').textContent = daysUntilRace;
   renderCurrentWeek(currentWeek, currentPlanWeek, plan);
@@ -505,12 +524,70 @@ function setProgress(id, pct, over = false) {
   el.classList.toggle('over', over);
 }
 
+// ── Agrégation mensuelle (à partir des données hebdo) ──────────────────────────
+function aggregateMonthly(weeks) {
+  const map = {};
+  weeks.forEach(w => {
+    const d = new Date(w.date);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    if (!map[key]) {
+      map[key] = {
+        date: w.date,
+        monthDate: new Date(d.getFullYear(), d.getMonth(), 1),
+        weekNums: [], runCount: 0, kmDone: 0, totalTime: 0, totalElevation: 0,
+        hrWeighted: 0, hrCount: 0, paceWeighted: 0, paceCount: 0,
+        planKmSum: 0, hasPlan: false, phases: {}, runs: []
+      };
+    }
+    const m = map[key];
+    if (w.weekNum > 0) m.weekNums.push(w.weekNum);
+    m.runCount += w.runCount;
+    m.kmDone += w.kmDone;
+    m.totalTime += w.totalTime;
+    m.totalElevation += w.totalElevation;
+    m.runs.push(...w.runs);
+    if (w.avgHeartrate) { m.hrWeighted += w.avgHeartrate * w.runCount; m.hrCount += w.runCount; }
+    if (w.avgPace) { m.paceWeighted += w.avgPace * w.runCount; m.paceCount += w.runCount; }
+    if (w.plan) {
+      m.planKmSum += w.plan.targetKm;
+      m.hasPlan = true;
+      m.phases[w.plan.phase] = (m.phases[w.plan.phase] || 0) + 1;
+    }
+  });
+  return Object.values(map).map(m => {
+    const dominantPhase = Object.entries(m.phases).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
+    const kmDone = parseFloat(m.kmDone.toFixed(2));
+    m.weekNums.sort((a, b) => a - b);
+    return {
+      date: m.date,
+      monthDate: m.monthDate,
+      weekNums: m.weekNums,
+      runCount: m.runCount,
+      kmDone,
+      totalTime: m.totalTime,
+      totalElevation: Math.round(m.totalElevation),
+      avgHeartrate: m.hrCount ? Math.round(m.hrWeighted / m.hrCount) : null,
+      avgPace: m.paceCount ? m.paceWeighted / m.paceCount : null,
+      plan: m.hasPlan ? { targetKm: parseFloat(m.planKmSum.toFixed(2)), phase: dominantPhase } : null,
+      vsTarget: m.hasPlan ? parseFloat((kmDone - m.planKmSum).toFixed(2)) : null,
+      runs: m.runs
+    };
+  }).sort((a, b) => b.monthDate - a.monthDate);
+}
+
 // ── Graphique ─────────────────────────────────────────────────────────────────
 function renderChart(weeks, plan) {
-  const chartWeeks = [...weeks].reverse().slice(-12);
-  const labels = chartWeeks.map(w => `S${w.weekNum}`);
-  const realKm = chartWeeks.map(w => w.kmDone);
-  const planKm = chartWeeks.map(w => w.plan?.targetKm ?? null);
+  const isMonthly = currentView === 'monthly';
+  const titleLabel = $('chart-title-label');
+  if (titleLabel) titleLabel.textContent = isMonthly ? 'Progression · km/mois' : 'Progression · km/semaine';
+
+  const rows = isMonthly ? aggregateMonthly(weeks) : weeks;
+  const chartRows = [...rows].reverse().slice(-12);
+  const labels = isMonthly
+    ? chartRows.map(r => r.monthDate.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' }))
+    : chartRows.map(w => `S${w.weekNum}`);
+  const realKm = chartRows.map(r => r.kmDone);
+  const planKm = chartRows.map(r => r.plan?.targetKm ?? null);
   const ctx = $('chart-progress').getContext('2d');
   if (chartInstance) chartInstance.destroy();
   Chart.defaults.font.family = 'JetBrains Mono, monospace';
@@ -541,17 +618,30 @@ function renderChart(weeks, plan) {
 
 // ── Tableau historique ────────────────────────────────────────────────────────
 function renderHistory(weeks) {
+  const isMonthly = currentView === 'monthly';
+  const label = $('history-label');
+  const th = $('th-period');
+  if (label) label.textContent = isMonthly ? 'Historique des mois' : 'Historique des semaines';
+  if (th) th.textContent = isMonthly ? 'Mois' : 'Sem.';
+
+  const rows = isMonthly ? aggregateMonthly(weeks) : weeks;
   const tbody = $('history-body');
   tbody.innerHTML = '';
-  weeks.slice(0, 15).forEach(w => {
+  rows.slice(0, 15).forEach(w => {
     const ecartVal = w.vsTarget;
     const ecartCls = ecartVal == null ? 'ecart-neu' : ecartVal >= 0 ? 'ecart-pos' : 'ecart-neg';
     const ecartTxt = ecartVal == null ? '—' : `${ecartVal >= 0 ? '+' : ''}${ecartVal}`;
     const phaseCls = w.plan ? `badge badge-${w.plan.phase}` : 'badge';
     const phaseTxt = w.plan ? fmt.phase(w.plan.phase) : '—';
+    const periodLabel = isMonthly
+      ? w.monthDate.toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' })
+      : (w.weekNum > 0 ? `S${w.weekNum}` : '—');
+    const subLabel = isMonthly
+      ? (w.weekNums.length ? `S${w.weekNums[0]}–S${w.weekNums[w.weekNums.length - 1]}` : '')
+      : fmt.date(w.date);
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td class="td-week">${w.weekNum > 0 ? `S${w.weekNum}` : '—'} <span style="color:var(--text-3);font-size:10px">${fmt.date(w.date)}</span></td>
+      <td class="td-week">${periodLabel} <span style="color:var(--text-3);font-size:10px">${subLabel}</span></td>
       <td><span class="${phaseCls}">${phaseTxt}</span></td>
       <td>${w.runCount}</td>
       <td class="td-km">${fmt.km(w.kmDone)}</td>

@@ -85,7 +85,14 @@
 
     <!-- Graphique -->
     <section class="section-chart">
-      <div class="section-label">Progression · km/semaine <span class="chart-legend"><span class="dot dot-real"></span>Réel <span class="dot dot-plan"></span>Plan</span></div>
+      <div class="section-label">
+        <span id="chart-title-label">Progression · km/semaine</span>
+        <span class="chart-legend"><span class="dot dot-real"></span>Réel <span class="dot dot-plan"></span>Plan</span>
+        <div class="view-toggle" id="view-toggle">
+          <button class="view-toggle-btn active" data-view="weekly">Hebdo</button>
+          <button class="view-toggle-btn" data-view="monthly">Mensuel</button>
+        </div>
+      </div>
       <div class="chart-wrap">
         <canvas id="chart-progress" height="160"></canvas>
       </div>
@@ -99,12 +106,12 @@
 
     <!-- Historique -->
     <section class="section-history">
-      <div class="section-label">Historique des semaines</div>
+      <div class="section-label" id="history-label">Historique des semaines</div>
       <div class="history-table-wrap">
         <table class="history-table" id="history-table">
           <thead>
             <tr>
-              <th>Sem.</th><th>Phase</th><th>Sorties</th><th>Km réalisés</th>
+              <th id="th-period">Sem.</th><th>Phase</th><th>Sorties</th><th>Km réalisés</th>
               <th>Plan (km)</th><th>Écart</th><th>Allure</th><th>FC</th><th>Dénivelé</th>
             </tr>
           </thead>

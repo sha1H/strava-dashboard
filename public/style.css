@@ -185,6 +185,7 @@ html, body {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 /* ── Metric Cards ─────────────────────────────────────────────────────────── */
@@ -278,6 +279,36 @@ html, body {
 }
 .dot-real { background: var(--accent); }
 .dot-plan { background: var(--border-2); }
+
+/* ── View toggle (Hebdo/Mensuel) ─────────────────────────────────────────── */
+.view-toggle {
+  display: inline-flex;
+  margin-left: auto;
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
+}
+.view-toggle-btn {
+  font-family: var(--font);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-3);
+  background: none;
+  border: none;
+  padding: 5px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  text-transform: none;
+  letter-spacing: normal;
+  transition: background 0.15s, color 0.15s;
+}
+.view-toggle-btn:hover { color: var(--text-2); }
+.view-toggle-btn.active {
+  background: var(--accent);
+  color: #fff;
+}
 
 .chart-wrap {
   background: var(--bg-1);
