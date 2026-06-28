@@ -353,14 +353,14 @@ const PLAN_DETAIL = [
 
 // ── Couleurs par type de séance ───────────────────────────────────────────────
 const SEANCE_COLORS = {
-  endurance:    { bg: 'rgba(59,130,246,0.1)',   border: '#3b82f6', label: 'Endurance' },
-  fractionne:   { bg: 'rgba(252,76,2,0.1)',     border: '#fc4c02', label: 'Fractionné' },
-  tempo:        { bg: 'rgba(168,85,247,0.1)',   border: '#a855f7', label: 'Tempo / Seuil' },
-  recuperation: { bg: 'rgba(34,197,94,0.1)',    border: '#22c55e', label: 'Récupération' },
-  renforcement: { bg: 'rgba(99,102,241,0.1)',   border: '#6366f1', label: 'Renforcement' },
-  velo:         { bg: 'rgba(20,184,166,0.1)',   border: '#14b8a6', label: 'Vélo' },
-  test:         { bg: 'rgba(251,191,36,0.1)',   border: '#fbbf24', label: 'Test VMA' },
-  course:       { bg: 'rgba(251,191,36,0.15)',  border: '#fbbf24', label: '🏁 Course' },
+  endurance:    { label: 'Endurance' },
+  fractionne:   { label: 'Fractionné' },
+  tempo:        { label: 'Tempo / Seuil' },
+  recuperation: { label: 'Récupération' },
+  renforcement: { label: 'Renforcement' },
+  velo:         { label: 'Vélo' },
+  test:         { label: 'Test VMA' },
+  course:       { label: 'Course' },
 };
 
 // ── Utilitaires formatage ────────────────────────────────────────────────────
@@ -521,7 +521,8 @@ function renderCurrentWeek(week, planWeekNum, plan) {
 function setProgress(id, pct, over = false) {
   const el = $(id);
   el.style.width = pct + '%';
-  el.classList.toggle('over', over);
+  const card = el.closest('.metric-card');
+  if (card) card.classList.toggle('complete', over);
 }
 
 // ── Agrégation mensuelle (à partir des données hebdo) ──────────────────────────
@@ -591,14 +592,14 @@ function renderChart(weeks, plan) {
   const ctx = $('chart-progress').getContext('2d');
   if (chartInstance) chartInstance.destroy();
   Chart.defaults.font.family = 'JetBrains Mono, monospace';
-  Chart.defaults.color = '#555555';
+  Chart.defaults.color = '#4d4d4d';
   chartInstance = new Chart(ctx, {
     type: 'bar',
     data: {
       labels,
       datasets: [
-        { label: 'Réel (km)', data: realKm, backgroundColor: '#fc4c02', borderRadius: 4, borderSkipped: false, order: 1 },
-        { label: 'Plan (km)', data: planKm, type: 'line', borderColor: '#2e2e2e', backgroundColor: 'transparent', borderWidth: 1.5, pointRadius: 3, pointBackgroundColor: '#2e2e2e', tension: 0.3, order: 0 }
+        { label: 'Réel (km)', data: realKm, backgroundColor: '#f5f5f5', borderRadius: 0, borderSkipped: false, order: 1 },
+        { label: 'Plan (km)', data: planKm, type: 'line', borderColor: '#666666', backgroundColor: 'transparent', borderWidth: 1.5, borderDash: [4, 3], pointRadius: 3, pointBackgroundColor: '#666666', tension: 0.2, order: 0 }
       ]
     },
     options: {
@@ -606,11 +607,11 @@ function renderChart(weeks, plan) {
       interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: { display: false },
-        tooltip: { backgroundColor: '#1a1a1a', borderColor: '#2e2e2e', borderWidth: 1, titleColor: '#888', bodyColor: '#f0f0f0', padding: 10, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y} km` } }
+        tooltip: { backgroundColor: '#0e0e0e', borderColor: '#404040', borderWidth: 1, titleColor: '#8c8c8c', bodyColor: '#f5f5f5', padding: 10, cornerRadius: 0, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y} km` } }
       },
       scales: {
-        x: { grid: { color: '#111', drawBorder: false }, ticks: { font: { size: 10 } } },
-        y: { grid: { color: '#1a1a1a', drawBorder: false }, ticks: { font: { size: 10 }, callback: v => v + ' km' }, beginAtZero: true }
+        x: { grid: { color: '#181818', drawBorder: false }, ticks: { font: { size: 10 } } },
+        y: { grid: { color: '#181818', drawBorder: false }, ticks: { font: { size: 10 }, callback: v => v + ' km' }, beginAtZero: true }
       }
     }
   });
@@ -716,11 +717,12 @@ function renderProgramme() {
 
 function renderSeanceCard(seance, index, weekNum) {
   const c = SEANCE_COLORS[seance.type] || SEANCE_COLORS.endurance;
+  const extraCls = seance.type === 'course' ? ' seance-card-course' : seance.type === 'test' ? ' seance-card-test' : '';
   return `
-    <div class="seance-card" style="border-left-color:${c.border}; background:${c.bg}">
+    <div class="seance-card${extraCls}">
       <button class="seance-header" onclick="toggleSeance(${weekNum}, ${index})">
         <div class="seance-header-left">
-          <span class="seance-badge" style="color:${c.border};background:${c.bg}">${c.label}</span>
+          <span class="seance-badge">${c.label}</span>
           <span class="seance-titre">${seance.titre}</span>
         </div>
         <div class="seance-header-right">

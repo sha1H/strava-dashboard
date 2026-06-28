@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Training Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -33,19 +33,25 @@
         <span class="header-tag">10km · sub 40</span>
       </div>
       <div class="header-right">
-        <div class="race-countdown">
-          <span class="countdown-num" id="days-count">—</span>
-          <span class="countdown-label">jours</span>
-        </div>
         <button class="btn-refresh" id="btn-refresh" title="Actualiser">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
         </button>
       </div>
     </header>
 
+    <!-- Hero : compte à rebours -->
+    <section class="hero">
+      <div class="hero-eyebrow">Objectif · 10km en moins de 40 minutes</div>
+      <div class="hero-row">
+        <span class="hero-num" id="days-count">—</span>
+        <span class="hero-label">jours avant<br>le 11 oct. 2026</span>
+      </div>
+      <div class="hero-sub">Semaine <strong id="current-week-label">S—</strong> du plan d'entraînement</div>
+    </section>
+
     <!-- Semaine en cours -->
     <section class="section-current">
-      <div class="section-label">Semaine en cours · <span id="current-week-label">S—</span></div>
+      <div class="section-label">Semaine en cours</div>
       <div class="cards-row" id="cards-current">
         <div class="metric-card">
           <div class="metric-val" id="cur-km">—</div>

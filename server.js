@@ -25,7 +25,7 @@ let tokenStore = { accessToken: null, refreshToken: null, expiresAt: 0, athleteI
 
 // ─── Plan d'entraînement (15 semaines, début auto-calculé) ───────────────────
 // Semaine 1 = semaine du lundi 30 juin 2025 (ajuste si besoin)
-const PLAN_START = new Date('2025-06-30');
+const PLAN_START = new Date('2026-06-30');
 const RACE_DATE  = new Date('2026-10-11');
 
 const PLAN = [
