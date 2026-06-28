@@ -27,7 +27,6 @@
   <!-- ── Dashboard principal ── -->
   <div id="screen-dashboard" class="screen hidden">
 
-    <!-- Header -->
     <header class="header">
       <div class="header-left">
         <span class="header-name" id="athlete-name">—</span>
@@ -38,7 +37,7 @@
           <span class="countdown-num" id="days-count">—</span>
           <span class="countdown-label">jours</span>
         </div>
-        <button class="btn-refresh" id="btn-refresh" title="Actualiser les données">
+        <button class="btn-refresh" id="btn-refresh" title="Actualiser">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
         </button>
       </div>
@@ -48,13 +47,13 @@
     <section class="section-current">
       <div class="section-label">Semaine en cours · <span id="current-week-label">S—</span></div>
       <div class="cards-row" id="cards-current">
-        <div class="metric-card" id="card-km">
+        <div class="metric-card">
           <div class="metric-val" id="cur-km">—</div>
           <div class="metric-name">km réalisés</div>
           <div class="metric-target" id="cur-km-target">— prévu</div>
           <div class="progress-bar"><div class="progress-fill" id="prog-km"></div></div>
         </div>
-        <div class="metric-card" id="card-runs">
+        <div class="metric-card">
           <div class="metric-val" id="cur-runs">—</div>
           <div class="metric-name">sorties</div>
           <div class="metric-target" id="cur-runs-target">— prévues</div>
@@ -81,12 +80,10 @@
           <div class="metric-target">cumulé</div>
         </div>
       </div>
-
-      <!-- Note du plan -->
       <div class="plan-note" id="plan-note"></div>
     </section>
 
-    <!-- Graphique progression -->
+    <!-- Graphique -->
     <section class="section-chart">
       <div class="section-label">Progression · km/semaine <span class="chart-legend"><span class="dot dot-real"></span>Réel <span class="dot dot-plan"></span>Plan</span></div>
       <div class="chart-wrap">
@@ -94,22 +91,21 @@
       </div>
     </section>
 
-    <!-- Historique semaines -->
+    <!-- Programme interactif -->
+    <section class="section-programme">
+      <div class="section-label">Programme · 15 semaines</div>
+      <div class="programme-list" id="programme-list"></div>
+    </section>
+
+    <!-- Historique -->
     <section class="section-history">
       <div class="section-label">Historique des semaines</div>
       <div class="history-table-wrap">
         <table class="history-table" id="history-table">
           <thead>
             <tr>
-              <th>Sem.</th>
-              <th>Phase</th>
-              <th>Sorties</th>
-              <th>Km réalisés</th>
-              <th>Plan (km)</th>
-              <th>Écart</th>
-              <th>Allure</th>
-              <th>FC</th>
-              <th>Dénivelé</th>
+              <th>Sem.</th><th>Phase</th><th>Sorties</th><th>Km réalisés</th>
+              <th>Plan (km)</th><th>Écart</th><th>Allure</th><th>FC</th><th>Dénivelé</th>
             </tr>
           </thead>
           <tbody id="history-body"></tbody>
