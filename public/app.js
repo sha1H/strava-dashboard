@@ -1,163 +1,366 @@
-/* app.js — Frontend Dashboard Strava */
+/* app.js — Frontend Dashboard Strava v2 */
 
-// ── Plan détaillé 15 semaines ────────────────────────────────────────────────
+// PLAN V2 — Basé sur profil réel : 37:50 sur 10km, VMA 20.5, reprise depuis 1 mois
+// VMA actuelle estimée : 17-18 km/h (à affiner via test S3)
+// Structure : 4 séances course + vélo récup + renforcement 2x/sem
+// Allures basées sur VMA actuelle (pas la VMA de forme)
+
+// LÉGENDE ALLURES :
+// EF = Endurance Fondamentale = 65-75% VMA = ~5:40-6:10/km (actuel)
+// Seuil = 83-88% VMA = ~4:40-5:00/km
+// AS10 = Allure Spécifique 10km = 4:00/km (objectif final)
+// VMA court = 95-100% VMA actuelle = ~3:30-3:45/km sur courtes distances
+// Les allures VMA évolueront avec le test S3
+
 const PLAN_DETAIL = [
+  // ════════════════════════════════════════════════════════
+  // PHASE 1 : RECONSTRUCTION (S1-S5)
+  // Objectif : retrouver le volume, les appuis, la mécanique
+  // ════════════════════════════════════════════════════════
   {
     week: 1, phase: 'reprise', targetKm: 10, runs: 4,
-    notes: 'Première semaine de reprise. Priorité absolue : écouter ton corps. Aucune douleur ne doit être ignorée.',
+    notes: 'Semaine 100% endurance fondamentale. Pas d\'intensité. Retrouve le plaisir et les sensations. Ton corps se souvient mais les tendons et articulations ont besoin de temps.',
     seances: [
-      { type: 'endurance', titre: 'Sortie facile', distance: '3 km', allure: '5:30–6:00/km', fc: 'Zone 2 (<145 bpm)', description: 'Footing très facile, tu dois pouvoir tenir une conversation sans effort. Si tu ressens la moindre gêne, marche.' },
-      { type: 'endurance', titre: 'Sortie facile', distance: '3 km', allure: '5:30–6:00/km', fc: 'Zone 2 (<145 bpm)', description: 'Même consigne que la première sortie. Pense à bien t\'échauffer 5 min en marchant.' },
-      { type: 'recuperation', titre: 'Récupération active', distance: '2 km', allure: 'Libre', fc: 'Zone 1 (<135 bpm)', description: 'Très courte sortie ou marche rapide. Objectif : activer la circulation, pas courir vite.' },
-      { type: 'endurance', titre: 'Sortie longue', distance: '4 km', allure: '5:30/km', fc: 'Zone 2', description: 'Ta sortie la plus longue de la semaine. Garde une allure confortable du début à la fin.' },
+      {
+        type: 'endurance', titre: 'Footing EF', distance: '25 min', allure: '5:50–6:10/km', fc: '65–72% FCM',
+        description: 'Footing en endurance fondamentale pure. Tu dois pouvoir tenir une conversation complète sans effort. Si tu dépasses 145 bpm, ralentis. Inclus 5 min de marche en échauffement.'
+      },
+      {
+        type: 'renforcement', titre: 'Renforcement musculaire A', distance: '20 min', allure: 'Hors course', fc: '—',
+        description: 'Circuit à faire chez toi ou en salle : 3×15 squats, 3×10 fentes alternées, 3×30 sec planche ventrale, 3×20 montées de genoux debout, 2×15 mollets sur marche. Repos 45 sec entre séries. Ce travail prévient les rechutes.'
+      },
+      {
+        type: 'endurance', titre: 'Footing EF', distance: '25 min', allure: '5:50–6:10/km', fc: '65–72% FCM',
+        description: 'Même consigne que la première sortie. Focus sur la foulée : attaque talon-milieu, cadence ~170-175 pas/min, épaules relâchées.'
+      },
+      {
+        type: 'endurance', titre: 'Sortie longue EF', distance: '35–40 min', allure: '6:00–6:20/km', fc: '<140 bpm',
+        description: 'Ta sortie longue de la semaine. Allure encore plus facile que les autres jours. L\'objectif est le temps sur pied, pas les kilomètres. Si tu te sens fatigué à 25 min, arrête.'
+      },
     ]
   },
   {
     week: 2, phase: 'reprise', targetKm: 15, runs: 4,
-    notes: 'On augmente le volume très progressivement. Toujours à allure conversationnelle.',
+    notes: 'On augmente de ~10% le volume. Toujours 100% endurance fondamentale. Introduction du vélo en récupération active si tu veux.',
     seances: [
-      { type: 'endurance', titre: 'Sortie facile', distance: '4 km', allure: '5:20–5:40/km', fc: 'Zone 2', description: 'Légère augmentation du volume. Tu dois rester à l\'aise tout au long.' },
-      { type: 'endurance', titre: 'Sortie facile', distance: '4 km', allure: '5:20–5:40/km', fc: 'Zone 2', description: 'Pense à t\'hydrater avant et après.' },
-      { type: 'recuperation', titre: 'Récupération active', distance: '3 km', allure: 'Libre', fc: 'Zone 1', description: 'Sortie courte à allure libre. Profites-en pour travailler ta foulée (cadence, relâchement des épaules).' },
-      { type: 'endurance', titre: 'Sortie longue', distance: '5 km', allure: '5:20/km', fc: 'Zone 2', description: 'Première vraie sortie longue du plan. Pars lentement, ne cherche pas à finir vite.' },
+      {
+        type: 'endurance', titre: 'Footing EF', distance: '30 min', allure: '5:45–6:05/km', fc: '65–72% FCM',
+        description: 'Légère progression du volume. Même allure confortable. Note tes sensations après la sortie sur une échelle de 1 à 10.'
+      },
+      {
+        type: 'renforcement', titre: 'Renforcement musculaire B', distance: '20 min', allure: 'Hors course', fc: '—',
+        description: 'Circuit B : 3×12 soulevé de terre poids de corps (chaise), 3×10 pont fessier, 3×30 sec gainage latéral chaque côté, 3×15 écart jambes élastique, 2×10 single leg deadlift. Ce circuit renforce les zones fragiles des coureurs.'
+      },
+      {
+        type: 'velo', titre: 'Vélo récupération (optionnel)', distance: '30–45 min', allure: 'Très facile', fc: '<130 bpm',
+        description: 'Alternative à un footing ou complément. Le vélo maintient le cardio sans impacter les tendons. Très léger, pas d\'effort. Si tu n\'as pas envie, repose-toi simplement.'
+      },
+      {
+        type: 'endurance', titre: 'Sortie longue EF', distance: '45 min', allure: '5:50–6:10/km', fc: '<140 bpm',
+        description: 'Sortie longue qui progresse. Reste à allure conversationnelle du début à la fin. Les 10 dernières minutes peuvent être légèrement plus dynamiques si tu te sens bien.'
+      },
     ]
   },
   {
     week: 3, phase: 'reprise', targetKm: 20, runs: 4,
-    notes: 'Introduction d\'une courte séance tempo. Reste à l\'écoute des signaux de ton corps.',
+    notes: '⭐ SEMAINE CLÉ : Test VMA en milieu de semaine. Il va calibrer toutes tes allures de fractionné pour les 12 semaines suivantes. Ne le zappe pas.',
     seances: [
-      { type: 'endurance', titre: 'Sortie facile', distance: '5 km', allure: '5:20/km', fc: 'Zone 2', description: 'Footing confortable. Volume qui monte progressivement.' },
-      { type: 'tempo', titre: 'Tempo court', distance: '5 km', allure: '4:30/km (15 min)', fc: 'Zone 3 (150–165 bpm)', description: 'Échauffement 10 min facile → 15 min à allure tempo (4:30/km) → retour au calme 10 min. C\'est la première séance avec de l\'intensité.' },
-      { type: 'recuperation', titre: 'Récupération active', distance: '3 km', allure: 'Libre', fc: 'Zone 1', description: 'Sortie légère le lendemain du tempo. Laisse ton corps récupérer.' },
-      { type: 'endurance', titre: 'Sortie longue', distance: '7 km', allure: '5:20/km', fc: 'Zone 2', description: 'La sortie longue s\'allonge. Garde l\'allure facile, même si tu te sens bien.' },
+      {
+        type: 'endurance', titre: 'Footing EF', distance: '35 min', allure: '5:40–6:00/km', fc: '65–72% FCM',
+        description: 'Footing facile. Prépare-toi mentalement au test VMA dans 2 jours. Pas de fatigue inutile.'
+      },
+      {
+        type: 'test', titre: '🔬 Test VMA 6 minutes', distance: '3–4 km total', allure: 'Effort maximal 6 min', fc: 'Max',
+        description: 'Échauffement 15 min progressif + 3 accélérations de 80m → Lance le chrono → cours 6 min EN EFFORT MAXIMAL (pas un sprint, un effort que tu peux tenir exactement 6 min) → mesure la distance parcourue. Ta VMA = distance (en m) ÷ 100. Ex : 1800m en 6 min = VMA 18 km/h. Note le résultat, on recalcule tout après. Retour calme 10 min.'
+      },
+      {
+        type: 'renforcement', titre: 'Renforcement musculaire A', distance: '20 min', allure: 'Hors course', fc: '—',
+        description: 'Circuit A (identique S1). Le lendemain du test c\'est parfait : pas d\'impact, mais tu travailles quand même.'
+      },
+      {
+        type: 'endurance', titre: 'Sortie longue EF', distance: '50 min', allure: '5:50–6:10/km', fc: '<140 bpm',
+        description: 'Sortie longue classique. Après le test de mercredi, reste très tranquille. Récupération active.'
+      },
     ]
   },
   {
-    week: 4, phase: 'reprise', targetKm: 28, runs: 4,
-    notes: 'Fin de la phase de reprise. Tu commences à retrouver ta forme.',
+    week: 4, phase: 'reprise', targetKm: 25, runs: 4,
+    notes: 'Première séance de qualité légère. On commence par des accélérations courtes, pas du vrai fractionné. Les allures sont basées sur ta VMA du test S3.',
     seances: [
-      { type: 'endurance', titre: 'Sortie facile', distance: '6 km', allure: '5:10/km', fc: 'Zone 2', description: 'Volume en augmentation. Allure toujours confortable.' },
-      { type: 'tempo', titre: 'Tempo moyen', distance: '7 km', allure: '4:20/km (20 min)', fc: 'Zone 3', description: 'Échauffement 10 min → 20 min tempo à 4:20/km → retour calme 10 min. Tu dois pouvoir parler par courtes phrases.' },
-      { type: 'recuperation', titre: 'Récupération active', distance: '5 km', allure: 'Libre', fc: 'Zone 1', description: 'Sortie facile, focus sur la respiration et le relâchement.' },
-      { type: 'endurance', titre: 'Sortie longue', distance: '10 km', allure: '5:10/km', fc: 'Zone 2', description: 'Premier 10 km du plan ! Pas d\'objectif de temps, juste finir confortablement.' },
+      {
+        type: 'endurance', titre: 'Footing EF + fartlek', distance: '35 min', allure: 'EF + 6×30 sec vif', fc: '65-75% + pics',
+        description: 'Footing EF 20 min → 6 accélérations de 30 secondes à allure vive (mais pas sprint) avec 1 min récup trottinée entre chaque → retour calme 5 min. Ces accélérations réveillent le système neuromusculaire sans le fatiguer.'
+      },
+      {
+        type: 'renforcement', titre: 'Renforcement musculaire B', distance: '25 min', allure: 'Hors course', fc: '—',
+        description: 'Circuit B enrichi : ajout de 2×10 pistol squat assisté (chaise), 3×12 Romanian deadlift jambe droite puis gauche. On augmente progressivement la difficulté.'
+      },
+      {
+        type: 'endurance', titre: 'Footing EF', distance: '35 min', allure: '5:40–5:55/km', fc: '65–72% FCM',
+        description: 'Footing tranquille. L\'allure commence à s\'améliorer naturellement. Ne cherche pas à forcer.'
+      },
+      {
+        type: 'endurance', titre: 'Sortie longue EF', distance: '55 min', allure: '5:45–6:05/km', fc: '<140 bpm',
+        description: 'Sortie longue en progression. Les 15 dernières minutes peuvent être à allure légèrement soutenue (5:20-5:30/km) si tu te sens bien — c\'est optionnel.'
+      },
     ]
   },
   {
-    week: 5, phase: 'developpement', targetKm: 30, runs: 4,
-    notes: 'Entrée dans la phase de développement. Premier fractionné au programme !',
+    week: 5, phase: 'reprise', targetKm: 28, runs: 4,
+    notes: 'Fin de la phase de reconstruction. Premier vrai fractionné court pour réactiver la vitesse. Allures basées sur ta VMA testée.',
     seances: [
-      { type: 'endurance', titre: 'Sortie facile', distance: '8 km', allure: '5:00/km', fc: 'Zone 2', description: 'Footing de base. Pense à bien t\'hydrater.' },
-      { type: 'fractionne', titre: 'Fractionné 4×1000m', distance: '7 km total', allure: '3:55–4:00/km', fc: 'Zone 4 (165–175 bpm)', description: 'Échauffement 15 min → 4×1000m à 3:55–4:00/km avec 90 sec récup jogging → retour calme 10 min. C\'est la séance clé du sub 40.' },
-      { type: 'recuperation', titre: 'Récupération active', distance: '5 km', allure: 'Libre', fc: 'Zone 1', description: 'Sortie très facile après le fractionné. Indispensable pour récupérer.' },
-      { type: 'endurance', titre: 'Sortie longue', distance: '10 km', allure: '5:00/km', fc: 'Zone 2', description: 'Sortie longue en endurance fondamentale.' },
+      {
+        type: 'endurance', titre: 'Footing EF', distance: '40 min', allure: '5:35–5:50/km', fc: '65–72% FCM',
+        description: 'Ton allure d\'endurance s\'est déjà améliorée par rapport à S1. C\'est le signe que ton organisme se réadapte.'
+      },
+      {
+        type: 'fractionne', titre: 'VMA court 8×30/30', distance: '5 km total', allure: '95-100% VMA sur les 30 sec', fc: 'Zone 4-5',
+        description: 'Échauffement 15 min progressif + PPG (talons-fesses, montées de genoux, foulées bondissantes) → 8 répétitions de 30 sec à 95-100% VMA avec 30 sec de récup trottinée → retour calme 10 min. Format idéal pour réactiver la filière rapide sans se blesser. Si ta VMA est 18 km/h, tes 30 sec d\'effort se font à ~5 m/sec.'
+      },
+      {
+        type: 'renforcement', titre: 'Renforcement musculaire A', distance: '25 min', allure: 'Hors course', fc: '—',
+        description: 'Circuit A. Après une séance de fractionné, le renforcement le lendemain est parfait : il complète le travail neuromusculaire sans choc.'
+      },
+      {
+        type: 'endurance', titre: 'Sortie longue EF', distance: '60 min', allure: '5:40–6:00/km', fc: '<140 bpm',
+        description: 'Première vraie sortie longue d\'une heure. Gère ton allure : les 20 premières minutes semblent toujours faciles, c\'est la fin qui compte.'
+      },
+    ]
+  },
+
+  // ════════════════════════════════════════════════════════
+  // PHASE 2 : DÉVELOPPEMENT (S6-S11)
+  // Objectif : développer VMA, seuil, allure spécifique 10km
+  // ════════════════════════════════════════════════════════
+  {
+    week: 6, phase: 'developpement', targetKm: 32, runs: 4,
+    notes: 'Entrée dans la phase de développement. Alternance VMA et seuil chaque semaine. Le volume progresse prudemment (règle des 10%).',
+    seances: [
+      {
+        type: 'endurance', titre: 'Footing EF', distance: '40 min', allure: '5:30–5:45/km', fc: '65–72% FCM',
+        description: 'Footing de base. Tu devrais sentir que ton allure naturelle d\'endurance s\'améliore semaine après semaine.'
+      },
+      {
+        type: 'fractionne', titre: 'VMA court 10×30/30', distance: '6 km total', allure: '95-100% VMA', fc: 'Zone 4-5',
+        description: 'Échauffement 15 min → 10×30 sec à 95-100% VMA avec 30 sec récup trottinée → retour calme 10 min. 2 répétitions de plus que S5. Si tu ne peux pas finir les 10, arrête à 8 — mieux vaut finir fort que terminer épuisé.'
+      },
+      {
+        type: 'renforcement', titre: 'Renforcement musculaire B', distance: '25 min', allure: 'Hors course', fc: '—',
+        description: 'Circuit B. Ajoute des pompes nordiques si tu en es capable (très efficace pour les ischio-jambiers).'
+      },
+      {
+        type: 'endurance', titre: 'Sortie longue EF', distance: '65 min', allure: '5:35–5:55/km', fc: '<140 bpm',
+        description: 'Sortie longue qui continue de progresser. Reste conservateur sur l\'allure — c\'est le volume qui compte ici.'
+      },
     ]
   },
   {
-    week: 6, phase: 'developpement', targetKm: 34, runs: 4,
-    notes: 'On augmente le volume du fractionné. La vitesse spécifique se développe.',
+    week: 7, phase: 'developpement', targetKm: 36, runs: 4,
+    notes: 'Semaine seuil. On alterne VMA (semaine paire) et seuil (semaine impaire). Le seuil développe ta capacité à tenir l\'allure 10km longtemps.',
     seances: [
-      { type: 'endurance', titre: 'Sortie facile', distance: '8 km', allure: '5:00/km', fc: 'Zone 2', description: 'Footing de base classique.' },
-      { type: 'fractionne', titre: 'Fractionné 5×1000m', distance: '8 km total', allure: '4:00/km', fc: 'Zone 4', description: 'Échauffement 15 min → 5×1000m à 4:00/km avec 90 sec récup → retour calme 10 min. Une répétition de plus.' },
-      { type: 'recuperation', titre: 'Récupération active', distance: '6 km', allure: 'Libre', fc: 'Zone 1', description: 'Footing récupération. Si tu as des courbatures, reste à la marche.' },
-      { type: 'endurance', titre: 'Sortie longue', distance: '12 km', allure: '5:00/km', fc: 'Zone 2', description: 'Volume en progression. Pars avec de l\'eau.' },
+      {
+        type: 'endurance', titre: 'Footing EF', distance: '40 min', allure: '5:25–5:40/km', fc: '65–72% FCM',
+        description: 'Footing classique. Échauffement soigné avant la séance seuil de mercredi/jeudi.'
+      },
+      {
+        type: 'tempo', titre: 'Seuil 2×12 min', distance: '8 km total', allure: '83-88% VMA (~4:40-4:50/km)', fc: 'Zone 3-4 (155-165 bpm)',
+        description: 'Échauffement 15 min → 2 répétitions de 12 min à allure seuil (83-88% VMA) avec 3 min de récup jogging entre les deux → retour calme 10 min. L\'allure seuil doit être inconfortable mais tenable. Tu peux prononcer 3-4 mots mais pas tenir une vraie conversation.'
+      },
+      {
+        type: 'renforcement', titre: 'Renforcement musculaire A', distance: '25 min', allure: 'Hors course', fc: '—',
+        description: 'Circuit A. Augmente progressivement la difficulté : descends plus bas dans les squats, tiens la planche plus longtemps.'
+      },
+      {
+        type: 'endurance', titre: 'Sortie longue EF', distance: '70 min', allure: '5:35–5:50/km', fc: '<140 bpm',
+        description: 'Sortie longue en progression. Les 15 dernières minutes à allure légèrement soutenue (5:15/km) si les sensations sont bonnes.'
+      },
     ]
   },
   {
-    week: 7, phase: 'developpement', targetKm: 38, runs: 4,
-    notes: 'Semaine de travail tempo. On développe l\'allure marathon et au-delà.',
+    week: 8, phase: 'recuperation', targetKm: 25, runs: 3,
+    notes: '⬇️ Semaine de récupération obligatoire. Le corps s\'adapte pendant le repos. Ne saute pas cette semaine même si tu te sens bien — c\'est ici que les progrès se consolident.',
     seances: [
-      { type: 'endurance', titre: 'Sortie facile', distance: '10 km', allure: '5:00/km', fc: 'Zone 2', description: 'Footing long en endurance fondamentale.' },
-      { type: 'tempo', titre: 'Tempo 25 min', distance: '9 km total', allure: '4:10/km pendant 25 min', fc: 'Zone 3–4', description: 'Échauffement 15 min → 25 min à 4:10/km → retour calme 10 min. Le tempo développe ta capacité à soutenir une allure élevée longtemps.' },
-      { type: 'recuperation', titre: 'Récupération active', distance: '7 km', allure: 'Libre', fc: 'Zone 1', description: 'Sortie facile de récupération.' },
-      { type: 'endurance', titre: 'Sortie longue', distance: '12 km', allure: '5:00/km', fc: 'Zone 2', description: 'Maintien du volume long.' },
-    ]
-  },
-  {
-    week: 8, phase: 'recuperation', targetKm: 28, runs: 3,
-    notes: 'Semaine de récupération obligatoire. Le corps s\'adapte pendant le repos, pas pendant l\'effort.',
-    seances: [
-      { type: 'endurance', titre: 'Sortie facile', distance: '8 km', allure: '5:10/km', fc: 'Zone 2', description: 'Footing tranquille. Profite de la semaine légère.' },
-      { type: 'recuperation', titre: 'Récupération active', distance: '8 km', allure: 'Libre', fc: 'Zone 1–2', description: 'Sortie relaxante. Tu peux intégrer quelques accélérations courtes si tu te sens bien.' },
-      { type: 'endurance', titre: 'Sortie longue réduite', distance: '12 km', allure: '5:10/km', fc: 'Zone 2', description: 'Sortie longue mais à allure très confortable. Pas de pression.' },
+      {
+        type: 'endurance', titre: 'Footing EF léger', distance: '35 min', allure: '5:45–6:00/km', fc: '<135 bpm',
+        description: 'Plus lent et plus court que d\'habitude. Profite de cette semaine allégée pour bien dormir et bien manger.'
+      },
+      {
+        type: 'velo', titre: 'Vélo récupération active', distance: '45 min', allure: 'Très facile', fc: '<125 bpm',
+        description: 'Séance vélo légère pour maintenir l\'activité sans fatiguer. Si tu n\'as pas envie, repos complet. Cette semaine est une récompense, pas une contrainte.'
+      },
+      {
+        type: 'renforcement', titre: 'Renforcement léger', distance: '15 min', allure: 'Hors course', fc: '—',
+        description: 'Version allégée du circuit A : 2×12 squats, 2×30 sec planche, 2×15 mollets. Juste pour maintenir les habitudes.'
+      },
+      {
+        type: 'endurance', titre: 'Sortie longue réduite', distance: '50 min', allure: '5:45–6:05/km', fc: '<135 bpm',
+        description: 'Sortie longue réduite et à allure très confortable. Pas de progression ce week-end, juste du plaisir.'
+      },
     ]
   },
   {
     week: 9, phase: 'developpement', targetKm: 40, runs: 4,
-    notes: 'Reprise du travail intense. Volume qui atteint un nouveau palier.',
+    notes: 'Retour en force après la récupération. Le fractionné monte en intensité : introduction des 200m à VMA pour développer la vitesse pure.',
     seances: [
-      { type: 'endurance', titre: 'Sortie facile', distance: '10 km', allure: '4:55/km', fc: 'Zone 2', description: 'L\'allure d\'endurance s\'améliore naturellement.' },
-      { type: 'fractionne', titre: 'Fractionné 6×1000m', distance: '9 km total', allure: '3:58/km', fc: 'Zone 4–5', description: 'Échauffement 15 min → 6×1000m à 3:58/km avec 90 sec récup → retour calme 10 min. L\'allure se rapproche de l\'objectif course.' },
-      { type: 'recuperation', titre: 'Récupération active', distance: '8 km', allure: 'Libre', fc: 'Zone 1', description: 'Récupération indispensable après une séance intense.' },
-      { type: 'endurance', titre: 'Sortie longue', distance: '13 km', allure: '4:55/km', fc: 'Zone 2', description: 'Volume maximum approche. Prépare ta nutrition si besoin après 60 min.' },
+      {
+        type: 'endurance', titre: 'Footing EF', distance: '45 min', allure: '5:20–5:35/km', fc: '65–72% FCM',
+        description: 'Ton allure EF a bien progressé. Continue de te calibrer à la fréquence cardiaque, pas à l\'allure.'
+      },
+      {
+        type: 'fractionne', titre: 'VMA 10×200m', distance: '7 km total', allure: '95-100% VMA sur les 200m', fc: 'Zone 4-5',
+        description: 'Échauffement 15 min + PPG → 10×200m à 95-100% VMA avec 1 min 15 sec de récup trottinée → retour calme 10 min. Les 200m à ta VMA actuelle (ex: 18 km/h) se font en ~40 secondes. Cours sur piste si possible pour être précis.'
+      },
+      {
+        type: 'renforcement', titre: 'Renforcement musculaire B', distance: '30 min', allure: 'Hors course', fc: '—',
+        description: 'Circuit B progressif. Tu peux commencer à ajouter du poids léger (haltères 5-8 kg) sur les exercices jambes si tu te sens à l\'aise.'
+      },
+      {
+        type: 'endurance', titre: 'Sortie longue EF', distance: '75 min', allure: '5:30–5:50/km', fc: '<140 bpm',
+        description: 'Nouvelle durée record du plan. Hydrate-toi et pense à prendre un gel ou un sucre si tu as tendance à manquer d\'énergie après 60 min.'
+      },
     ]
   },
   {
-    week: 10, phase: 'developpement', targetKm: 45, runs: 4,
-    notes: 'Semaine chargée. Tempo long pour construire l\'endurance à allure spécifique.',
+    week: 10, phase: 'developpement', targetKm: 44, runs: 4,
+    notes: 'Semaine seuil avancé. Introduction de l\'allure spécifique 10km (AS10 = 4:00/km). C\'est la vitesse de course objectif.',
     seances: [
-      { type: 'endurance', titre: 'Sortie facile', distance: '12 km', allure: '4:55/km', fc: 'Zone 2', description: 'Footing long de base.' },
-      { type: 'tempo', titre: 'Tempo 30 min', distance: '11 km total', allure: '4:05/km pendant 30 min', fc: 'Zone 3–4', description: 'Échauffement 15 min → 30 min à 4:05/km → retour calme 10 min. Cette séance simule la deuxième moitié de ton 10km de course.' },
-      { type: 'recuperation', titre: 'Récupération active', distance: '8 km', allure: 'Libre', fc: 'Zone 1', description: 'Très facile. Si tu as des douleurs, repose-toi complètement.' },
-      { type: 'endurance', titre: 'Sortie longue', distance: '14 km', allure: '4:55/km', fc: 'Zone 2', description: 'Ta sortie longue la plus longue du plan. Gère bien ton allure.' },
+      {
+        type: 'endurance', titre: 'Footing EF', distance: '45 min', allure: '5:15–5:30/km', fc: '65–72% FCM',
+        description: 'Ton allure EF se rapproche de l\'allure marathon. Signe que ton endurance fondamentale est en train de monter.'
+      },
+      {
+        type: 'tempo', titre: 'Seuil + AS10 : 3×10 min', distance: '10 km total', allure: '10 min seuil + 10 min AS10 + 10 min seuil', fc: 'Zone 3-4',
+        description: 'Échauffement 15 min → 10 min à allure seuil (4:40-4:50/km) → 2 min récup → 10 min à AS10 (4:00/km) → 2 min récup → 10 min à allure seuil → retour calme 10 min. Première fois à 4:00/km ! Si c\'est trop dur, descends à 4:10/km.'
+      },
+      {
+        type: 'renforcement', titre: 'Renforcement musculaire A', distance: '30 min', allure: 'Hors course', fc: '—',
+        description: 'Circuit A avancé. Ajoute des sauts : 3×10 sauts en contrebas (box jump), 3×10 sauts sur place jambes tendues. Ces exercices développent la puissance de propulsion.'
+      },
+      {
+        type: 'endurance', titre: 'Sortie longue EF', distance: '80 min', allure: '5:30–5:45/km', fc: '<140 bpm',
+        description: 'Sortie longue maximale. Pars vraiment lentement pour tenir 80 min. Les 15 dernières minutes peuvent être à allure plus soutenue si les jambes répondent.'
+      },
     ]
   },
   {
-    week: 11, phase: 'developpement', targetKm: 50, runs: 4,
-    notes: 'Pic de charge. Semaine la plus dure du plan. Après ça, le plus dur est fait.',
+    week: 11, phase: 'developpement', targetKm: 48, runs: 4,
+    notes: 'Pic de volume et d\'intensité. Semaine la plus dure du plan. Le fractionné monte à 400m pour développer l\'endurance de vitesse.',
     seances: [
-      { type: 'endurance', titre: 'Sortie facile', distance: '13 km', allure: '4:50/km', fc: 'Zone 2', description: 'Footing de base à volume élevé.' },
-      { type: 'fractionne', titre: '3×2000m', distance: '10 km total', allure: '4:00/km', fc: 'Zone 4', description: 'Échauffement 15 min → 3×2000m à 4:00/km avec 2 min récup → retour calme 10 min. Les répétitions longues développent ta puissance aérobie.' },
-      { type: 'recuperation', titre: 'Récupération active', distance: '10 km', allure: 'Libre', fc: 'Zone 1', description: 'Sortie récupération. Dors bien cette semaine.' },
-      { type: 'endurance', titre: 'Sortie longue', distance: '15 km', allure: '4:50/km', fc: 'Zone 2', description: 'Sortie longue maximale du plan !' },
+      {
+        type: 'endurance', titre: 'Footing EF', distance: '50 min', allure: '5:10–5:25/km', fc: '65–72% FCM',
+        description: 'Footing long de base. La progression de ton allure EF reflète directement ta progression générale.'
+      },
+      {
+        type: 'fractionne', titre: 'VMA 8×400m', distance: '8 km total', allure: '95% VMA sur les 400m', fc: 'Zone 4-5',
+        description: 'Échauffement 15 min → 8×400m à 95% VMA avec 1 min 30 sec de récup trottinée → retour calme 10 min. À 18 km/h de VMA, chaque 400m se fait en ~1 min 20. Ces répétitions développent ton endurance de vitesse — la qualité la plus importante pour le sub 40.'
+      },
+      {
+        type: 'renforcement', titre: 'Renforcement musculaire B', distance: '30 min', allure: 'Hors course', fc: '—',
+        description: 'Circuit B complet avec les sauts. Sois attentif à la technique, surtout si tu as des antécédents de blessure.'
+      },
+      {
+        type: 'endurance', titre: 'Sortie longue EF', distance: '80 min', allure: '5:25–5:40/km', fc: '<140 bpm',
+        description: 'Maintien de la sortie longue maximale. Tu arrives à la fin du bloc de développement — tout le travail dur est presque derrière toi.'
+      },
+    ]
+  },
+
+  // ════════════════════════════════════════════════════════
+  // PHASE 3 : SPÉCIFIQUE + AFFÛTAGE (S12-S15)
+  // Objectif : imprimer l'allure 4:00/km, arriver frais
+  // ════════════════════════════════════════════════════════
+  {
+    week: 12, phase: 'recuperation', targetKm: 30, runs: 3,
+    notes: '⬇️ Deuxième semaine de récupération. Volume -35%. L\'intensité se maintient mais le volume baisse fortement. Indispensable pour arriver frais en phase spécifique.',
+    seances: [
+      {
+        type: 'endurance', titre: 'Footing EF léger', distance: '35 min', allure: '5:30–5:45/km', fc: '<135 bpm',
+        description: 'Footing léger et tranquille. Profite de la semaine légère pour prendre soin de toi : sommeil, nutrition, récupération.'
+      },
+      {
+        type: 'fractionne', titre: 'VMA court 8×30/30', distance: '5 km total', allure: '95% VMA', fc: 'Zone 4',
+        description: 'Maintien de la vitesse mais volume réduit. 8 répétitions seulement. Échauffement 15 min → 8×30/30 → retour calme 10 min.'
+      },
+      {
+        type: 'endurance', titre: 'Sortie longue réduite', distance: '50 min', allure: '5:30–5:45/km', fc: '<135 bpm',
+        description: 'Sortie longue allégée. Pas de progression, juste maintenir les jambes actives.'
+      },
     ]
   },
   {
-    week: 12, phase: 'recuperation', targetKm: 35, runs: 3,
-    notes: 'Deuxième semaine de récupération. Obligatoire pour arriver frais à l\'affûtage.',
+    week: 13, phase: 'specifique', targetKm: 40, runs: 4,
+    notes: '⭐ Phase spécifique. Les séances clés se font maintenant à 4:00/km (AS10). Tu dois sentir cette allure dans tes jambes avant la course.',
     seances: [
-      { type: 'endurance', titre: 'Sortie facile', distance: '10 km', allure: '5:00/km', fc: 'Zone 2', description: 'Footing tranquille. Le volume descend volontairement.' },
-      { type: 'tempo', titre: 'Tempo court', distance: '12 km', allure: '4:10/km (20 min)', fc: 'Zone 3', description: 'Maintien de l\'intensité mais durée réduite. Échauffement 15 min → 20 min tempo → retour calme.' },
-      { type: 'endurance', titre: 'Sortie longue réduite', distance: '13 km', allure: '5:00/km', fc: 'Zone 2', description: 'Sortie longue à allure confortable.' },
-    ]
-  },
-  {
-    week: 13, phase: 'affutage', targetKm: 35, runs: 4,
-    notes: 'Phase d\'affûtage. Le volume baisse, l\'intensité se maintient. Tu gardes le tranchant.',
-    seances: [
-      { type: 'endurance', titre: 'Sortie facile', distance: '8 km', allure: '5:00/km', fc: 'Zone 2', description: 'Volume réduit mais qualité maintenue.' },
-      { type: 'fractionne', titre: 'Fractionné 5×1000m', distance: '8 km total', allure: '3:55/km', fc: 'Zone 4', description: 'Échauffement 15 min → 5×1000m à 3:55/km → retour calme. Allure légèrement plus rapide que l\'objectif course.' },
-      { type: 'recuperation', titre: 'Récupération active', distance: '7 km', allure: 'Libre', fc: 'Zone 1', description: 'Footing très facile.' },
-      { type: 'endurance', titre: 'Sortie longue réduite', distance: '12 km', allure: '5:00/km', fc: 'Zone 2', description: 'Dernière vraie sortie longue.' },
+      {
+        type: 'endurance', titre: 'Footing EF', distance: '40 min', allure: '5:10–5:25/km', fc: '65–72% FCM',
+        description: 'Footing de base. Ton EF devrait maintenant se sentir très confortable à cette allure.'
+      },
+      {
+        type: 'fractionne', titre: 'AS10 : 5×2000m', distance: '11 km total', allure: '4:00/km sur les 2000m', fc: 'Zone 4',
+        description: 'Échauffement 15 min → 5×2000m à 4:00/km avec 2 min de récup trottinée → retour calme 10 min. C\'est la séance la plus spécifique du plan. Chaque répétition de 2000m simule un segment de ta course. Gère bien les premières — ne pars pas trop vite.'
+      },
+      {
+        type: 'renforcement', titre: 'Renforcement léger', distance: '20 min', allure: 'Hors course', fc: '—',
+        description: 'Circuit léger d\'entretien. Pas besoin de s\'épuiser, juste maintenir les acquis.'
+      },
+      {
+        type: 'endurance', titre: 'Sortie longue EF', distance: '65 min', allure: '5:20–5:35/km', fc: '<140 bpm',
+        description: 'Sortie longue qui commence à diminuer. Les 15 dernières minutes à allure AS10 (4:00/km) si tu te sens bien.'
+      },
     ]
   },
   {
     week: 14, phase: 'affutage', targetKm: 25, runs: 4,
-    notes: 'J-10 environ. Dernière séance intense. Après ça, on préserve les jambes.',
+    notes: '⬇️ Affûtage. Volume -45%. L\'intensité se maintient sur des distances courtes. On préserve les jambes pour le jour J.',
     seances: [
-      { type: 'endurance', titre: 'Sortie facile', distance: '6 km', allure: '5:00/km', fc: 'Zone 2', description: 'Footing léger.' },
-      { type: 'fractionne', titre: 'Dernier fractionné 4×1000m', distance: '7 km total', allure: '3:55/km', fc: 'Zone 4', description: 'Échauffement 15 min → 4×1000m à 3:55/km → retour calme. Dernière séance intense. Tu dois te sentir fort et rapide.' },
-      { type: 'recuperation', titre: 'Récupération active', distance: '5 km', allure: 'Libre', fc: 'Zone 1', description: 'Sortie légère. Repose-toi bien les jours suivants.' },
-      { type: 'endurance', titre: 'Sortie courte', distance: '7 km', allure: '5:00/km', fc: 'Zone 2', description: 'Dernière sortie un peu longue.' },
+      {
+        type: 'endurance', titre: 'Footing EF', distance: '30 min', allure: '5:10–5:25/km', fc: '65–72% FCM',
+        description: 'Footing léger. Tu vas peut-être ressentir une fatigue passagère cette semaine — c\'est normal pendant l\'affûtage. C\'est le signe que ton corps se prépare.'
+      },
+      {
+        type: 'fractionne', titre: 'AS10 court : 6×1000m', distance: '7 km total', allure: '4:00/km sur les 1000m', fc: 'Zone 4',
+        description: 'Échauffement 15 min → 6×1000m à 4:00/km avec 90 sec récup → retour calme 10 min. Dernière séance intense. Tu dois te sentir à l\'aise à 4:00/km — si c\'est le cas, tu es prêt.'
+      },
+      {
+        type: 'endurance', titre: 'Footing EF court', distance: '25 min', allure: '5:20–5:40/km', fc: '<135 bpm',
+        description: 'Très court, très facile. Juste pour garder les jambes actives.'
+      },
+      {
+        type: 'endurance', titre: 'Sortie courte avec strides', distance: '30 min', allure: 'EF + 4×100m accélérations', fc: '<135 bpm',
+        description: 'Footing 20 min très facile → 4 accélérations progressives de 100m (pas des sprints, des accélérations fluides) → retour 5 min. Ces strides gardent les jambes vives sans les fatiguer.'
+      },
     ]
   },
   {
-    week: 15, phase: 'affutage', targetKm: 15, runs: 3,
-    notes: 'Semaine de course. Repos actif uniquement. Prépare ton équipement et ta logistique.',
+    week: 15, phase: 'affutage', targetKm: 12, runs: 3,
+    notes: '🏁 Semaine de course. Repos actif uniquement. Prépare ta logistique (dossard, chaussures, nutrition, trajet). La forme est acquise — maintenant tu la conserves.',
     seances: [
-      { type: 'recuperation', titre: 'Jogging léger', distance: '5 km', allure: '5:30/km', fc: 'Zone 1', description: 'Lundi ou mardi uniquement. Très léger, juste pour garder les jambes actives.' },
-      { type: 'recuperation', titre: 'Jogging d\'activation', distance: '4 km + strides', allure: '5:30/km + 4×100m', fc: 'Zone 1–2', description: 'J-3 ou J-4. Footing facile avec 4 accélérations progressives de 100m pour réveiller les jambes. Pas de fatigue.' },
-      { type: 'course', titre: '🏁 10km — Sub 40 !', distance: '10 km', allure: '3:59/km', fc: 'Zone 4–5', description: 'Plan de course : km 1–2 à 4:05/km (ne pars pas trop vite !), km 3–7 à 4:00/km, km 8–10 : tout donner. Tu es prêt.' },
+      {
+        type: 'recuperation', titre: 'Jogging très léger', distance: '20 min', allure: '6:00–6:30/km', fc: '<125 bpm',
+        description: 'Lundi ou mardi uniquement. Ultra léger, quasi de la marche rapide. Juste pour garder le sang qui circule. Si tu as la moindre douleur, marche à la place.'
+      },
+      {
+        type: 'recuperation', titre: 'Activation J-3 ou J-4', distance: '15 min + strides', allure: '6:00/km + 4×80m', fc: '<130 bpm',
+        description: 'Footing 10 min très facile → 4 accélérations progressives de 80m → marche 5 min. Ces strides réveillent les fibres rapides sans créer de fatigue. Idéalement J-3 avant la course (ex: mercredi si course dimanche).'
+      },
+      {
+        type: 'course', titre: '🏁 10km — Objectif sub 40 !', distance: '10 km', allure: '3:58–4:00/km', fc: 'Zone 4-5',
+        description: 'STRATÉGIE DE COURSE : Km 1 à 4:05/km (ne pars pas avec les rapides !). Km 2-7 à 4:00/km réguliers. Km 8-9 : accélère si les sensations sont là. Km 10 : tout donner. Rappelle-toi : tu as fait 37:50 il y a 3 ans. Ce niveau est en toi. Gère le début, le reste suit. Bonne course 🔥'
+      },
     ]
   },
 ];
 
 // ── Couleurs par type de séance ───────────────────────────────────────────────
 const SEANCE_COLORS = {
-  endurance:   { bg: 'rgba(59,130,246,0.1)',  border: '#3b82f6', label: 'Endurance' },
-  fractionne:  { bg: 'rgba(252,76,2,0.1)',    border: '#fc4c02', label: 'Fractionné' },
-  tempo:       { bg: 'rgba(168,85,247,0.1)',  border: '#a855f7', label: 'Tempo' },
-  recuperation:{ bg: 'rgba(34,197,94,0.1)',   border: '#22c55e', label: 'Récupération' },
-  course:      { bg: 'rgba(251,191,36,0.1)',  border: '#fbbf24', label: 'Course' },
+  endurance:    { bg: 'rgba(59,130,246,0.1)',   border: '#3b82f6', label: 'Endurance' },
+  fractionne:   { bg: 'rgba(252,76,2,0.1)',     border: '#fc4c02', label: 'Fractionné' },
+  tempo:        { bg: 'rgba(168,85,247,0.1)',   border: '#a855f7', label: 'Tempo / Seuil' },
+  recuperation: { bg: 'rgba(34,197,94,0.1)',    border: '#22c55e', label: 'Récupération' },
+  renforcement: { bg: 'rgba(99,102,241,0.1)',   border: '#6366f1', label: 'Renforcement' },
+  velo:         { bg: 'rgba(20,184,166,0.1)',   border: '#14b8a6', label: 'Vélo' },
+  test:         { bg: 'rgba(251,191,36,0.1)',   border: '#fbbf24', label: 'Test VMA' },
+  course:       { bg: 'rgba(251,191,36,0.15)',  border: '#fbbf24', label: '🏁 Course' },
 };
 
 // ── Utilitaires formatage ────────────────────────────────────────────────────
@@ -177,7 +380,7 @@ const fmt = {
     const d = new Date(v);
     return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
   },
-  phase: v => ({ reprise:'Reprise', developpement:'Dév.', recuperation:'Récup.', affutage:'Affûtage' }[v] || v),
+  phase: v => ({ reprise:'Reprise', developpement:'Dév.', recuperation:'Récup.', affutage:'Affûtage', specifique:'Spécifique' }[v] || v),
 };
 
 // ── Cache local ───────────────────────────────────────────────────────────────
@@ -392,7 +595,7 @@ function renderProgramme() {
 
   PLAN_DETAIL.forEach(week => {
     const isCurrent = week.week === currentWeekNum;
-    const phaseLabel = { reprise:'Reprise', developpement:'Développement', recuperation:'Récupération', affutage:'Affûtage' }[week.phase] || week.phase;
+    const phaseLabel = { reprise:'Reprise', developpement:'Développement', recuperation:'Récupération', affutage:'Affûtage', specifique:'Spécifique' }[week.phase] || week.phase;
     const phaseCls = `badge badge-${week.phase}`;
 
     const weekEl = document.createElement('div');

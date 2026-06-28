@@ -617,3 +617,8 @@ html, body {
   color: var(--text-2);
   line-height: 1.6;
 }
+
+/* Badge phase spécifique */
+.badge-specifique { background: rgba(252,76,2,0.15); color: #fc4c02; }
+/* Badge test VMA */
+.seance-card-test { border-left-color: #fbbf24 !important; background: rgba(251,191,36,0.08) !important; }
