@@ -31,12 +31,13 @@ const cache = {
 };
 
 // ─── Dates du plan ────────────────────────────────────────────────────────────
-const PLAN_START = new Date('2026-01-01');
+// Plan démarre le lundi 29 juin 2026 (semaine en cours)
+const PLAN_START = new Date('2026-06-29');
 const RACE_DATE  = new Date('2026-10-11');
 
-// ─── Plan V2 — km calculés depuis les séances (coherent avec app.js) ─────────
-// Les targetKm sont calculés par le frontend depuis les séances détaillées.
-// Ici on garde les valeurs pour la comparaison API (arrondi cohérent).
+// Date de début de récupération des activités Strava (6 mois en arrière)
+const FETCH_FROM = new Date('2026-01-01');
+
 const PLAN = [
   { week: 1,  phase: 'reprise',       targetKm: 14, runs: 4, notes: 'Reconstruction — endurance fondamentale pure' },
   { week: 2,  phase: 'reprise',       targetKm: 13, runs: 4, notes: 'Volume progressif — allure conversationnelle' },
@@ -97,8 +98,7 @@ app.get('/callback', async (req, res) => {
       grant_type: 'authorization_code'
     });
     const { access_token, refresh_token, expires_at, athlete } = r.data;
-    const tokens = { accessToken: access_token, refreshToken: refresh_token, expiresAt: expires_at, athleteId: athlete.id };
-    saveTokens(tokens);
+    saveTokens({ accessToken: access_token, refreshToken: refresh_token, expiresAt: expires_at, athleteId: athlete.id });
     res.redirect('/?connected=true');
   } catch(err) {
     console.error('OAuth error:', err.response?.data || err.message);
@@ -116,7 +116,7 @@ async function getValidToken() {
     refresh_token: t.refreshToken,
     grant_type:    'refresh_token'
   });
-  saveTokens({ ...t, accessToken: r.data.access_token, refreshToken: r.data.refresh_token, expiresAt: r.data.expires_at });
+  saveTokens({ ...loadTokens(), accessToken: r.data.access_token, refreshToken: r.data.refresh_token, expiresAt: r.data.expires_at });
   return r.data.access_token;
 }
 
@@ -147,16 +147,28 @@ app.get('/api/activities', async (req, res) => {
 
   try {
     const token = await getValidToken();
-    const after = Math.floor(PLAN_START.getTime() / 1000);
-    const r = await axios.get('https://www.strava.com/api/v3/athlete/activities', {
-      headers: { Authorization: `Bearer ${token}` },
-      params:  { after, per_page: 200 }
-    });
 
-    const runs = r.data.filter(a => ['Run', 'VirtualRun'].includes(a.type));
+    // Récupère depuis FETCH_FROM avec pagination pour avoir toutes les activités
+    let allRuns = [];
+    let page = 1;
+    while (true) {
+      const r = await axios.get('https://www.strava.com/api/v3/athlete/activities', {
+        headers: { Authorization: `Bearer ${token}` },
+        params: {
+          after:    Math.floor(FETCH_FROM.getTime() / 1000),
+          per_page: 200,
+          page
+        }
+      });
+      const batch = r.data.filter(a => ['Run', 'VirtualRun'].includes(a.type));
+      allRuns = allRuns.concat(batch);
+      if (r.data.length < 200) break; // plus de pages
+      page++;
+      if (page > 5) break; // sécurité max 1000 activités
+    }
 
     const weeksMap = {};
-    runs.forEach(run => {
+    allRuns.forEach(run => {
       const monday = getMonday(new Date(run.start_date));
       const k = monday.toISOString().split('T')[0];
       if (!weeksMap[k]) weeksMap[k] = {
