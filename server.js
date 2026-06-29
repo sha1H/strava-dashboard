@@ -31,7 +31,7 @@ const cache = {
 };
 
 // ─── Dates du plan ────────────────────────────────────────────────────────────
-const PLAN_START = new Date('2026-06-30');
+const PLAN_START = new Date('2025-01-01');
 const RACE_DATE  = new Date('2026-10-11');
 
 // ─── Plan V2 — km calculés depuis les séances (coherent avec app.js) ─────────
