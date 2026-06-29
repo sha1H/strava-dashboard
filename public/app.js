@@ -353,14 +353,14 @@ const PLAN_DETAIL = [
 
 // ── Couleurs par type de séance ───────────────────────────────────────────────
 const SEANCE_COLORS = {
-  endurance:    { label: 'Endurance' },
-  fractionne:   { label: 'Fractionné' },
-  tempo:        { label: 'Tempo / Seuil' },
-  recuperation: { label: 'Récupération' },
-  renforcement: { label: 'Renforcement' },
-  velo:         { label: 'Vélo' },
-  test:         { label: 'Test VMA' },
-  course:       { label: 'Course' },
+  endurance:    { bg: 'rgba(59,130,246,0.1)',   border: '#3b82f6', label: 'Endurance' },
+  fractionne:   { bg: 'rgba(252,76,2,0.1)',     border: '#fc4c02', label: 'Fractionné' },
+  tempo:        { bg: 'rgba(168,85,247,0.1)',   border: '#a855f7', label: 'Tempo / Seuil' },
+  recuperation: { bg: 'rgba(34,197,94,0.1)',    border: '#22c55e', label: 'Récupération' },
+  renforcement: { bg: 'rgba(99,102,241,0.1)',   border: '#6366f1', label: 'Renforcement' },
+  velo:         { bg: 'rgba(20,184,166,0.1)',   border: '#14b8a6', label: 'Vélo' },
+  test:         { bg: 'rgba(251,191,36,0.1)',   border: '#fbbf24', label: 'Test VMA' },
+  course:       { bg: 'rgba(251,191,36,0.15)',  border: '#fbbf24', label: '🏁 Course' },
 };
 
 // ── Utilitaires formatage ────────────────────────────────────────────────────
@@ -400,8 +400,93 @@ const localCache = {
 
 const $ = id => document.getElementById(id);
 let chartInstance = null;
-let lastData = null;
-let currentView = 'weekly'; // 'weekly' | 'monthly'
+
+// ── État période (hebdo / mensuel) ────────────────────────────────────────────
+let currentPeriod = 'hebdo';
+let globalData = null;
+
+// ── Calcul km réels par séance ────────────────────────────────────────────────
+function calcKmFromSeance(seance) {
+  if (['renforcement', 'velo'].includes(seance.type)) return 0;
+  const dist = seance.distance.toLowerCase();
+
+  // "X km total" ou "X km"
+  const kmMatch = dist.match(/^(\d+(?:[.,]\d+)?)\s*km/);
+  if (kmMatch) return parseFloat(kmMatch[1].replace(',', '.'));
+
+  // "X–Y km"
+  const kmRangeMatch = dist.match(/(\d+(?:[.,]\d+)?)\s*[–\-]\s*(\d+(?:[.,]\d+)?)\s*km/);
+  if (kmRangeMatch) return (parseFloat(kmRangeMatch[1]) + parseFloat(kmRangeMatch[2])) / 2;
+
+  // Minutes → km via allure
+  const minMatch = dist.match(/(\d+)(?:\s*[–\-]\s*(\d+))?\s*min/);
+  if (minMatch) {
+    const minutes = minMatch[2]
+      ? (parseInt(minMatch[1]) + parseInt(minMatch[2])) / 2
+      : parseInt(minMatch[1]);
+    const paceMatch = seance.allure.match(/(\d+):(\d+)\s*(?:[–\-]\s*(\d+):(\d+))?\/km/);
+    if (paceMatch) {
+      const p1 = parseInt(paceMatch[1]) * 60 + parseInt(paceMatch[2]);
+      const p2 = paceMatch[3] ? parseInt(paceMatch[3]) * 60 + parseInt(paceMatch[4]) : p1;
+      return parseFloat(((minutes * 60) / ((p1 + p2) / 2)).toFixed(2));
+    }
+    const def = { endurance:360, recuperation:390, tempo:285, fractionne:300, test:330, course:239 }[seance.type] || 360;
+    return parseFloat(((minutes * 60) / def).toFixed(2));
+  }
+  return 0;
+}
+
+// ── Recalcule targetKm de chaque semaine du plan ──────────────────────────────
+function computePlanKm(plan) {
+  return plan.map(week => ({
+    ...week,
+    targetKm: parseFloat(week.seances.reduce((s, x) => s + calcKmFromSeance(x), 0).toFixed(1))
+  }));
+}
+
+// ── Toggle période ────────────────────────────────────────────────────────────
+function setPeriod(period) {
+  currentPeriod = period;
+  document.getElementById('btn-hebdo').classList.toggle('active', period === 'hebdo');
+  document.getElementById('btn-mensuel').classList.toggle('active', period === 'mensuel');
+  if (globalData) renderStats(globalData);
+}
+
+// ── Calcul des stats mensuelles ───────────────────────────────────────────────
+function getMonthStats(weeks) {
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const monthEnd   = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+  const monthWeeks = weeks.filter(w => {
+    const d = new Date(w.date);
+    return d >= monthStart && d <= monthEnd;
+  });
+
+  if (!monthWeeks.length) return null;
+
+  const kmDone = parseFloat(monthWeeks.reduce((s, w) => s + w.kmDone, 0).toFixed(1));
+  const runCount = monthWeeks.reduce((s, w) => s + w.runCount, 0);
+  const totalTime = monthWeeks.reduce((s, w) => s + w.totalTime, 0);
+  const totalElevation = monthWeeks.reduce((s, w) => s + w.totalElevation, 0);
+
+  const hrList = monthWeeks.filter(w => w.avgHeartrate).map(w => w.avgHeartrate);
+  const avgHeartrate = hrList.length ? Math.round(hrList.reduce((a,b) => a+b,0) / hrList.length) : null;
+
+  const paceList = monthWeeks.filter(w => w.avgPace).map(w => w.avgPace);
+  const avgPace = paceList.length ? paceList.reduce((a,b) => a+b,0) / paceList.length : null;
+
+  // Plan mensuel = somme des semaines du mois
+  const planWeekNums = monthWeeks.map(w => w.weekNum).filter(n => n > 0);
+  const targetKm = planWeekNums.reduce((s, n) => {
+    const pw = PLAN_DETAIL.find(p => p.week === n);
+    return s + (pw ? pw.seances.reduce((ss, x) => ss + calcKmFromSeance(x), 0) : 0);
+  }, 0);
+
+  return { kmDone, runCount, totalTime, totalElevation, avgHeartrate, avgPace,
+    targetKm: parseFloat(targetKm.toFixed(1)), targetRuns: planWeekNums.length * 4 };
+}
+
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 (async function init() {
@@ -439,22 +524,6 @@ let currentView = 'weekly'; // 'weekly' | 'monthly'
 
   // Rendu du programme (statique, pas besoin d'API)
   renderProgramme();
-
-  // Toggle Hebdo / Mensuel
-  const toggle = $('view-toggle');
-  if (toggle) {
-    toggle.addEventListener('click', e => {
-      const btn = e.target.closest('.view-toggle-btn');
-      if (!btn || btn.classList.contains('active')) return;
-      toggle.querySelectorAll('.view-toggle-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      currentView = btn.dataset.view;
-      if (lastData) {
-        renderChart(lastData.weeks, lastData.plan);
-        renderHistory(lastData.weeks);
-      }
-    });
-  }
 })();
 
 // ── Chargement activités ──────────────────────────────────────────────────────
@@ -480,39 +549,73 @@ async function loadActivities(force = false) {
 
 // ── Rendu principal ───────────────────────────────────────────────────────────
 function renderAll(data) {
-  lastData = data;
-  const { weeks, currentWeek, currentPlanWeek, plan, daysUntilRace } = data;
+  const planWithKm = computePlanKm(PLAN_DETAIL);
+  data.plan = data.plan.map(p => {
+    const computed = planWithKm.find(x => x.week === p.week);
+    return computed ? { ...p, targetKm: computed.targetKm } : p;
+  });
+  globalData = data;
+  const { weeks, daysUntilRace } = data;
   $('days-count').textContent = daysUntilRace;
-  renderCurrentWeek(currentWeek, currentPlanWeek, plan);
-  renderChart(weeks, plan);
+  renderStats(data);
+  renderChart(weeks, data.plan);
   renderHistory(weeks);
   renderRecentRuns(weeks);
 }
 
-// ── Semaine en cours ──────────────────────────────────────────────────────────
-function renderCurrentWeek(week, planWeekNum, plan) {
-  const planWeek = plan.find(p => p.week === planWeekNum);
-  $('current-week-label').textContent = `S${planWeekNum || '—'}`;
-  if (planWeek) {
-    $('plan-note').textContent = `S${planWeekNum} · ${fmt.phase(planWeek.phase)} — ${planWeek.notes}`;
-    $('cur-km-target').textContent = `${planWeek.targetKm} km prévus`;
-    $('cur-runs-target').textContent = `${planWeek.runs} prévues`;
-  }
-  if (!week) {
-    ['cur-km','cur-runs','cur-pace','cur-hr','cur-time','cur-elev'].forEach(id => $(id).textContent = '0');
-    setProgress('prog-km', 0);
-    setProgress('prog-runs', 0);
+function renderStats(data) {
+  const { weeks, currentWeek, currentPlanWeek, plan } = data;
+
+  if (currentPeriod === 'mensuel') {
+    const month = getMonthStats(weeks);
+    const now = new Date();
+    const monthName = now.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+    $('current-week-label').textContent = monthName;
+    $('plan-note').textContent = month
+      ? `Mois en cours — ${month.targetKm} km prévus au plan`
+      : 'Pas de données ce mois-ci';
+    if (!month) {
+      ['cur-km','cur-runs','cur-pace','cur-hr','cur-time','cur-elev'].forEach(id => $(id).textContent = '—');
+      setProgress('prog-km', 0); setProgress('prog-runs', 0);
+      return;
+    }
+    $('cur-km').textContent          = fmt.km(month.kmDone);
+    $('cur-runs').textContent        = month.runCount;
+    $('cur-pace').textContent        = fmt.pace(month.avgPace);
+    $('cur-hr').textContent          = month.avgHeartrate || '—';
+    $('cur-time').textContent        = fmt.time(month.totalTime);
+    $('cur-elev').textContent        = month.totalElevation ? `+${month.totalElevation}` : '—';
+    $('cur-km-target').textContent   = `${month.targetKm} km prévus`;
+    $('cur-runs-target').textContent = `${month.targetRuns} prévues`;
+    if (month.targetKm > 0) {
+      setProgress('prog-km',   Math.min((month.kmDone / month.targetKm) * 100, 100), month.kmDone >= month.targetKm);
+      setProgress('prog-runs', Math.min((month.runCount / month.targetRuns) * 100, 100), month.runCount >= month.targetRuns);
+    }
     return;
   }
-  $('cur-km').textContent    = fmt.km(week.kmDone);
-  $('cur-runs').textContent  = week.runCount;
-  $('cur-pace').textContent  = fmt.pace(week.avgPace);
-  $('cur-hr').textContent    = week.avgHeartrate || '—';
-  $('cur-time').textContent  = fmt.time(week.totalTime);
-  $('cur-elev').textContent  = week.totalElevation ? `+${week.totalElevation}` : '—';
+
+  // Mode hebdo
+  const planWeek = plan.find(p => p.week === currentPlanWeek);
+  $('current-week-label').textContent  = `S${currentPlanWeek || '—'}`;
   if (planWeek) {
-    const kmPct   = Math.min((week.kmDone / planWeek.targetKm) * 100, 100);
-    const runsPct = Math.min((week.runCount / planWeek.runs) * 100, 100);
+    $('plan-note').textContent         = `S${currentPlanWeek} · ${fmt.phase(planWeek.phase)} — ${planWeek.notes}`;
+    $('cur-km-target').textContent     = `${planWeek.targetKm} km prévus`;
+    $('cur-runs-target').textContent   = `${planWeek.runs} prévues`;
+  }
+  if (!currentWeek) {
+    ['cur-km','cur-runs','cur-pace','cur-hr','cur-time','cur-elev'].forEach(id => $(id).textContent = '0');
+    setProgress('prog-km', 0); setProgress('prog-runs', 0);
+    return;
+  }
+  $('cur-km').textContent    = fmt.km(currentWeek.kmDone);
+  $('cur-runs').textContent  = currentWeek.runCount;
+  $('cur-pace').textContent  = fmt.pace(currentWeek.avgPace);
+  $('cur-hr').textContent    = currentWeek.avgHeartrate || '—';
+  $('cur-time').textContent  = fmt.time(currentWeek.totalTime);
+  $('cur-elev').textContent  = currentWeek.totalElevation ? `+${currentWeek.totalElevation}` : '—';
+  if (planWeek && planWeek.targetKm > 0) {
+    const kmPct   = Math.min((currentWeek.kmDone / planWeek.targetKm) * 100, 100);
+    const runsPct = Math.min((currentWeek.runCount / planWeek.runs) * 100, 100);
     setProgress('prog-km',   kmPct,   kmPct >= 100);
     setProgress('prog-runs', runsPct, runsPct >= 100);
   }
@@ -521,85 +624,26 @@ function renderCurrentWeek(week, planWeekNum, plan) {
 function setProgress(id, pct, over = false) {
   const el = $(id);
   el.style.width = pct + '%';
-  const card = el.closest('.metric-card');
-  if (card) card.classList.toggle('complete', over);
-}
-
-// ── Agrégation mensuelle (à partir des données hebdo) ──────────────────────────
-function aggregateMonthly(weeks) {
-  const map = {};
-  weeks.forEach(w => {
-    const d = new Date(w.date);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-    if (!map[key]) {
-      map[key] = {
-        date: w.date,
-        monthDate: new Date(d.getFullYear(), d.getMonth(), 1),
-        weekNums: [], runCount: 0, kmDone: 0, totalTime: 0, totalElevation: 0,
-        hrWeighted: 0, hrCount: 0, paceWeighted: 0, paceCount: 0,
-        planKmSum: 0, hasPlan: false, phases: {}, runs: []
-      };
-    }
-    const m = map[key];
-    if (w.weekNum > 0) m.weekNums.push(w.weekNum);
-    m.runCount += w.runCount;
-    m.kmDone += w.kmDone;
-    m.totalTime += w.totalTime;
-    m.totalElevation += w.totalElevation;
-    m.runs.push(...w.runs);
-    if (w.avgHeartrate) { m.hrWeighted += w.avgHeartrate * w.runCount; m.hrCount += w.runCount; }
-    if (w.avgPace) { m.paceWeighted += w.avgPace * w.runCount; m.paceCount += w.runCount; }
-    if (w.plan) {
-      m.planKmSum += w.plan.targetKm;
-      m.hasPlan = true;
-      m.phases[w.plan.phase] = (m.phases[w.plan.phase] || 0) + 1;
-    }
-  });
-  return Object.values(map).map(m => {
-    const dominantPhase = Object.entries(m.phases).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
-    const kmDone = parseFloat(m.kmDone.toFixed(2));
-    m.weekNums.sort((a, b) => a - b);
-    return {
-      date: m.date,
-      monthDate: m.monthDate,
-      weekNums: m.weekNums,
-      runCount: m.runCount,
-      kmDone,
-      totalTime: m.totalTime,
-      totalElevation: Math.round(m.totalElevation),
-      avgHeartrate: m.hrCount ? Math.round(m.hrWeighted / m.hrCount) : null,
-      avgPace: m.paceCount ? m.paceWeighted / m.paceCount : null,
-      plan: m.hasPlan ? { targetKm: parseFloat(m.planKmSum.toFixed(2)), phase: dominantPhase } : null,
-      vsTarget: m.hasPlan ? parseFloat((kmDone - m.planKmSum).toFixed(2)) : null,
-      runs: m.runs
-    };
-  }).sort((a, b) => b.monthDate - a.monthDate);
+  el.classList.toggle('over', over);
 }
 
 // ── Graphique ─────────────────────────────────────────────────────────────────
 function renderChart(weeks, plan) {
-  const isMonthly = currentView === 'monthly';
-  const titleLabel = $('chart-title-label');
-  if (titleLabel) titleLabel.textContent = isMonthly ? 'Progression · km/mois' : 'Progression · km/semaine';
-
-  const rows = isMonthly ? aggregateMonthly(weeks) : weeks;
-  const chartRows = [...rows].reverse().slice(-12);
-  const labels = isMonthly
-    ? chartRows.map(r => r.monthDate.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' }))
-    : chartRows.map(w => `S${w.weekNum}`);
-  const realKm = chartRows.map(r => r.kmDone);
-  const planKm = chartRows.map(r => r.plan?.targetKm ?? null);
+  const chartWeeks = [...weeks].reverse().slice(-12);
+  const labels = chartWeeks.map(w => `S${w.weekNum}`);
+  const realKm = chartWeeks.map(w => w.kmDone);
+  const planKm = chartWeeks.map(w => w.plan?.targetKm ?? null);
   const ctx = $('chart-progress').getContext('2d');
   if (chartInstance) chartInstance.destroy();
   Chart.defaults.font.family = 'JetBrains Mono, monospace';
-  Chart.defaults.color = '#4d4d4d';
+  Chart.defaults.color = '#555555';
   chartInstance = new Chart(ctx, {
     type: 'bar',
     data: {
       labels,
       datasets: [
-        { label: 'Réel (km)', data: realKm, backgroundColor: '#f5f5f5', borderRadius: 0, borderSkipped: false, order: 1 },
-        { label: 'Plan (km)', data: planKm, type: 'line', borderColor: '#666666', backgroundColor: 'transparent', borderWidth: 1.5, borderDash: [4, 3], pointRadius: 3, pointBackgroundColor: '#666666', tension: 0.2, order: 0 }
+        { label: 'Réel (km)', data: realKm, backgroundColor: '#fc4c02', borderRadius: 4, borderSkipped: false, order: 1 },
+        { label: 'Plan (km)', data: planKm, type: 'line', borderColor: '#2e2e2e', backgroundColor: 'transparent', borderWidth: 1.5, pointRadius: 3, pointBackgroundColor: '#2e2e2e', tension: 0.3, order: 0 }
       ]
     },
     options: {
@@ -607,11 +651,11 @@ function renderChart(weeks, plan) {
       interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: { display: false },
-        tooltip: { backgroundColor: '#0e0e0e', borderColor: '#404040', borderWidth: 1, titleColor: '#8c8c8c', bodyColor: '#f5f5f5', padding: 10, cornerRadius: 0, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y} km` } }
+        tooltip: { backgroundColor: '#1a1a1a', borderColor: '#2e2e2e', borderWidth: 1, titleColor: '#888', bodyColor: '#f0f0f0', padding: 10, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y} km` } }
       },
       scales: {
-        x: { grid: { color: '#181818', drawBorder: false }, ticks: { font: { size: 10 } } },
-        y: { grid: { color: '#181818', drawBorder: false }, ticks: { font: { size: 10 }, callback: v => v + ' km' }, beginAtZero: true }
+        x: { grid: { color: '#111', drawBorder: false }, ticks: { font: { size: 10 } } },
+        y: { grid: { color: '#1a1a1a', drawBorder: false }, ticks: { font: { size: 10 }, callback: v => v + ' km' }, beginAtZero: true }
       }
     }
   });
@@ -619,30 +663,17 @@ function renderChart(weeks, plan) {
 
 // ── Tableau historique ────────────────────────────────────────────────────────
 function renderHistory(weeks) {
-  const isMonthly = currentView === 'monthly';
-  const label = $('history-label');
-  const th = $('th-period');
-  if (label) label.textContent = isMonthly ? 'Historique des mois' : 'Historique des semaines';
-  if (th) th.textContent = isMonthly ? 'Mois' : 'Sem.';
-
-  const rows = isMonthly ? aggregateMonthly(weeks) : weeks;
   const tbody = $('history-body');
   tbody.innerHTML = '';
-  rows.slice(0, 15).forEach(w => {
+  weeks.slice(0, 15).forEach(w => {
     const ecartVal = w.vsTarget;
     const ecartCls = ecartVal == null ? 'ecart-neu' : ecartVal >= 0 ? 'ecart-pos' : 'ecart-neg';
     const ecartTxt = ecartVal == null ? '—' : `${ecartVal >= 0 ? '+' : ''}${ecartVal}`;
     const phaseCls = w.plan ? `badge badge-${w.plan.phase}` : 'badge';
     const phaseTxt = w.plan ? fmt.phase(w.plan.phase) : '—';
-    const periodLabel = isMonthly
-      ? w.monthDate.toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' })
-      : (w.weekNum > 0 ? `S${w.weekNum}` : '—');
-    const subLabel = isMonthly
-      ? (w.weekNums.length ? `S${w.weekNums[0]}–S${w.weekNums[w.weekNums.length - 1]}` : '')
-      : fmt.date(w.date);
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td class="td-week">${periodLabel} <span style="color:var(--text-3);font-size:10px">${subLabel}</span></td>
+      <td class="td-week">${w.weekNum > 0 ? `S${w.weekNum}` : '—'} <span style="color:var(--text-3);font-size:10px">${fmt.date(w.date)}</span></td>
       <td><span class="${phaseCls}">${phaseTxt}</span></td>
       <td>${w.runCount}</td>
       <td class="td-km">${fmt.km(w.kmDone)}</td>
@@ -717,12 +748,11 @@ function renderProgramme() {
 
 function renderSeanceCard(seance, index, weekNum) {
   const c = SEANCE_COLORS[seance.type] || SEANCE_COLORS.endurance;
-  const extraCls = seance.type === 'course' ? ' seance-card-course' : seance.type === 'test' ? ' seance-card-test' : '';
   return `
-    <div class="seance-card${extraCls}">
+    <div class="seance-card" style="border-left-color:${c.border}; background:${c.bg}">
       <button class="seance-header" onclick="toggleSeance(${weekNum}, ${index})">
         <div class="seance-header-left">
-          <span class="seance-badge">${c.label}</span>
+          <span class="seance-badge" style="color:${c.border};background:${c.bg}">${c.label}</span>
           <span class="seance-titre">${seance.titre}</span>
         </div>
         <div class="seance-header-right">
