@@ -217,6 +217,20 @@ const localCache = {
   clear() { try { localStorage.removeItem(this.KEY); } catch(e) {} }
 };
 
+// ── Coches manuelles (renforcement, vélo, etc.) ───────────────────────────────
+const manualChecks = {
+  KEY: 'strava_dash_checks',
+  getAll() { try { return JSON.parse(localStorage.getItem(this.KEY) || '{}'); } catch(e) { return {}; } },
+  isChecked(weekNum, seanceIndex) { return !!this.getAll()[`${weekNum}-${seanceIndex}`]; },
+  toggle(weekNum, seanceIndex) {
+    const all = this.getAll();
+    const key = `${weekNum}-${seanceIndex}`;
+    all[key] = !all[key];
+    try { localStorage.setItem(this.KEY, JSON.stringify(all)); } catch(e) {}
+    return all[key];
+  }
+};
+
 const $ = id => document.getElementById(id);
 let chartInstance = null;
 let currentPeriod = 'hebdo';
@@ -228,6 +242,16 @@ function showToast(msg) {
   t.textContent = msg;
   t.classList.remove('hidden');
   setTimeout(() => t.classList.add('hidden'), 2500);
+}
+
+// ── Coche manuelle (renforcement, vélo) ───────────────────────────────────────
+function onManualCheck(weekNum, seanceIndex) {
+  const nowChecked = manualChecks.toggle(weekNum, seanceIndex);
+  showToast(nowChecked ? 'Séance marquée comme faite' : 'Séance décochée');
+  if (globalData) {
+    renderSeancesMatching(globalData);
+    renderWeekAnalysis(globalData);
+  }
 }
 
 // ── Navigation ────────────────────────────────────────────────────────────────
@@ -304,6 +328,7 @@ function renderAll(data) {
   renderStats(data);
   renderChart(weeks, data.plan);
   renderSeancesMatching(data);
+  renderWeekAnalysis(data);
   renderHistory(weeks);
   renderRecentRuns(weeks);
 }
@@ -423,6 +448,113 @@ function renderChart(weeks, plan) {
   });
 }
 
+// ── ANALYSE HEBDOMADAIRE AUTOMATIQUE ──────────────────────────────────────────
+function analyzeWeek(weekNum, currentWeek, planWeek) {
+  if (!planWeek) return null;
+
+  const points = [];   // { type: 'good'|'warn'|'bad', text }
+  const matches = matchSeancesToRuns(weekNum, currentWeek?.runs || []);
+  const trackableMatches = matches.filter(m => m.isTrackable);
+  const doneMatches = trackableMatches.filter(m => m.matchedRun);
+  const manualDone = matches.filter(m => !m.isTrackable && manualChecks.isChecked(weekNum, m.index));
+  const totalSeances = planWeek.seances.length;
+  const totalDone = doneMatches.length + manualDone.length;
+
+  // ── 1. Volume (km) ──
+  const kmDone = currentWeek?.kmDone || 0;
+  const kmTarget = planWeek.targetKm;
+  const kmPct = kmTarget > 0 ? (kmDone / kmTarget) * 100 : 0;
+
+  if (kmPct >= 95) {
+    points.push({ type: 'good', text: `Volume respecté : ${kmDone.toFixed(1)} km réalisés sur ${kmTarget} km prévus (${Math.round(kmPct)}%).` });
+  } else if (kmPct >= 70) {
+    points.push({ type: 'warn', text: `Volume légèrement sous l'objectif : ${kmDone.toFixed(1)} km sur ${kmTarget} km prévus (${Math.round(kmPct)}%). Pas dramatique mais à surveiller.` });
+  } else if (kmPct > 0) {
+    points.push({ type: 'bad', text: `Volume nettement insuffisant : seulement ${kmDone.toFixed(1)} km sur ${kmTarget} km prévus (${Math.round(kmPct)}%). Cette semaine est en dessous du plan.` });
+  } else {
+    points.push({ type: 'bad', text: `Aucune activité enregistrée cette semaine alors que ${kmTarget} km étaient prévus.` });
+  }
+
+  // ── 2. Nombre de séances ──
+  if (totalDone >= totalSeances) {
+    points.push({ type: 'good', text: `Toutes les séances prévues (${totalSeances}) ont été réalisées ou cochées.` });
+  } else if (totalDone >= totalSeances - 1) {
+    points.push({ type: 'warn', text: `${totalDone} séance(s) sur ${totalSeances} réalisées. Il en manque une — vérifie si c'est volontaire (repos) ou oublié.` });
+  } else if (totalDone > 0) {
+    points.push({ type: 'bad', text: `Seulement ${totalDone} séance(s) sur ${totalSeances} réalisées. Plusieurs séances manquantes cette semaine.` });
+  }
+
+  // ── 3. Allures (sur séances trackées avec cible précise) ──
+  const paceComparisons = doneMatches.map(m => compareSeanceToRun(m.seance, m.matchedRun)).filter(c => c && c.paceStatus !== 'neutral');
+  if (paceComparisons.length > 0) {
+    const okPaces = paceComparisons.filter(c => c.paceStatus === 'ok').length;
+    const pacePct = (okPaces / paceComparisons.length) * 100;
+    if (pacePct === 100) {
+      points.push({ type: 'good', text: `Toutes les allures cibles ont été respectées sur les séances trackées.` });
+    } else if (pacePct >= 50) {
+      points.push({ type: 'warn', text: `${okPaces}/${paceComparisons.length} séances dans l'allure cible. Quelques écarts, à ajuster la semaine prochaine.` });
+    } else {
+      points.push({ type: 'bad', text: `Seulement ${okPaces}/${paceComparisons.length} séances dans l'allure cible. Les allures sont nettement décalées par rapport au plan — vérifie si c'est de la fatigue ou un problème de calibrage.` });
+    }
+  }
+
+  // ── 4. FC moyenne vs zone attendue (sur l'ensemble de la semaine) ──
+  if (currentWeek?.avgHeartrate) {
+    const hr = currentWeek.avgHeartrate;
+    if (planWeek.phase === 'reprise' || planWeek.phase === 'recuperation') {
+      if (hr > 155) points.push({ type: 'warn', text: `FC moyenne de ${hr} bpm un peu élevée pour une semaine de ${planWeek.phase === 'reprise' ? 'reprise' : 'récupération'}. Vérifie que tes sorties EF sont bien menées à allure facile.` });
+      else points.push({ type: 'good', text: `FC moyenne de ${hr} bpm cohérente avec une semaine de ${planWeek.phase === 'reprise' ? 'reprise' : 'récupération'} en endurance fondamentale.` });
+    }
+  }
+
+  // ── 5. Dénivelé (info neutre, juste contexte) ──
+  if (currentWeek?.totalElevation > 100) {
+    points.push({ type: 'warn', text: `Dénivelé cumulé important (+${currentWeek.totalElevation}m). Si ce n'est pas prévu au plan, ça ajoute de la fatigue supplémentaire à prendre en compte.` });
+  }
+
+  // ── Verdict global ──
+  const goodCount = points.filter(p => p.type === 'good').length;
+  const badCount = points.filter(p => p.type === 'bad').length;
+  let verdict;
+  if (badCount === 0 && goodCount >= 2) verdict = { level: 'good', text: 'Semaine solide, dans les clous du plan.' };
+  else if (badCount >= 2) verdict = { level: 'bad', text: 'Semaine en retrait par rapport au plan. À corriger la semaine prochaine.' };
+  else verdict = { level: 'warn', text: 'Semaine globalement correcte avec quelques points à ajuster.' };
+
+  return { verdict, points, weekNum };
+}
+
+function renderWeekAnalysis(data) {
+  const container = $('week-analysis');
+  if (!container) return;
+
+  const weekNum = data.currentPlanWeek;
+  const planWeek = PLAN_DETAIL.find(w => w.week === weekNum);
+  const analysis = analyzeWeek(weekNum, data.currentWeek, planWeek);
+
+  if (!analysis || analysis.points.length === 0) {
+    container.innerHTML = `<div style="padding:20px;color:var(--text-3);font-size:12px;">Pas assez de données pour analyser cette semaine.</div>`;
+    return;
+  }
+
+  const verdictIcon = { good: '✓', warn: '!', bad: '✕' }[analysis.verdict.level];
+  const pointIcon = { good: '✓', warn: '!', bad: '✕' };
+
+  container.innerHTML = `
+    <div class="analysis-verdict analysis-${analysis.verdict.level}">
+      <span class="analysis-verdict-icon">${verdictIcon}</span>
+      <span class="analysis-verdict-text">${analysis.verdict.text}</span>
+    </div>
+    <div class="analysis-points">
+      ${analysis.points.map(p => `
+        <div class="analysis-point analysis-point-${p.type}">
+          <span class="analysis-point-icon">${pointIcon[p.type]}</span>
+          <span class="analysis-point-text">${p.text}</span>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
 // ── MATCHING : associe les sorties Strava aux séances du plan ────────────────
 function matchSeancesToRuns(weekNum, runs) {
   const planWeek = PLAN_DETAIL.find(w => w.week === weekNum);
@@ -489,8 +621,16 @@ function renderSeancesMatching(data) {
     let statusHtml, rightHtml;
 
     if (!m.isTrackable) {
-      statusHtml = `<span class="seance-status status-notrack">Hors Strava</span>`;
-      rightHtml = `<div class="seance-real-sub">À cocher manuellement</div>`;
+      const checked = manualChecks.isChecked(weekNum, i);
+      statusHtml = checked
+        ? `<span class="seance-status status-done">Réalisé</span>`
+        : `<span class="seance-status status-notrack">Hors Strava</span>`;
+      rightHtml = `
+        <label class="manual-check-wrap">
+          <input type="checkbox" class="manual-check" ${checked ? 'checked' : ''} onchange="onManualCheck(${weekNum}, ${i})">
+          <span>${checked ? 'Marqué comme fait' : 'Marquer comme fait'}</span>
+        </label>
+      `;
     } else if (m.matchedRun) {
       const cmp = compareSeanceToRun(m.seance, m.matchedRun);
       statusHtml = `<span class="seance-status status-done">Réalisé</span>`;
