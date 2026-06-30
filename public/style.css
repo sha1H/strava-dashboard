@@ -127,7 +127,7 @@ button { cursor: pointer; font-family: var(--font); }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ── MAIN CONTENT ────────────────────────────────────────────────────────── */
-.main-content { margin-left: var(--sidebar-w); flex: 1; min-height: 100vh; padding: 32px; max-width: 900px; }
+.main-content { margin-left: var(--sidebar-w); flex: 1; min-height: 100vh; padding: 32px 48px 48px; max-width: 1400px; }
 
 .page { display: none; }
 .page.active { display: block; }
@@ -164,8 +164,9 @@ button { cursor: pointer; font-family: var(--font); }
 .period-hint { font-family: var(--mono); font-size: 10px; color: var(--text-3); letter-spacing: 0.05em; }
 
 /* ── STATS GRID ───────────────────────────────────────────────────────────── */
-.stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+.stats-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 24px; }
 
+@media (max-width: 1100px) { .stats-grid { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 700px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
 
 .stat-card { background: var(--bg-1); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 16px; }

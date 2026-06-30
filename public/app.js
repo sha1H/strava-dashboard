@@ -232,8 +232,9 @@ function showToast(msg) {
 
 // ── Navigation ────────────────────────────────────────────────────────────────
 function goPage(page) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => { p.classList.remove('active'); p.classList.add('hidden'); });
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  $(`page-${page}`).classList.remove('hidden');
   $(`page-${page}`).classList.add('active');
   document.querySelector(`.nav-item[data-page="${page}"]`).classList.add('active');
 }
@@ -251,8 +252,10 @@ function goPage(page) {
   showScreen('app');
 
   fetch('/api/athlete').then(r => r.json()).then(a => {
-    $('athlete-name').textContent = `${a.firstname} ${a.lastname}`;
-    $('athlete-avatar').textContent = `${a.firstname[0]}${a.lastname[0]}`;
+    if (a && a.firstname) {
+      $('athlete-name').textContent = `${a.firstname} ${a.lastname || ''}`.trim();
+      $('athlete-avatar').textContent = `${a.firstname[0]}${a.lastname ? a.lastname[0] : ''}`.toUpperCase();
+    }
   }).catch(() => {});
 
   const cached = localCache.get();
