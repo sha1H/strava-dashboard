@@ -10,123 +10,210 @@
 </head>
 <body>
 
-  <!-- ── Écran de connexion ── -->
+  <!-- ══ ÉCRAN LOGIN ══ -->
   <div id="screen-login" class="screen">
     <div class="login-wrap">
-      <div class="login-eyebrow">Sub 40 · 11 oct 2026</div>
+      <div class="login-logo">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" style="color:var(--accent)"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/></svg>
+      </div>
       <h1 class="login-title">Training<br>Dashboard</h1>
-      <p class="login-sub">Connecte Strava pour visualiser<br>ta progression semaine par semaine.</p>
+      <div class="login-meta">
+        <span class="login-tag">10km</span>
+        <span class="login-tag">Sub 40</span>
+        <span class="login-tag">11 oct 2026</span>
+      </div>
+      <p class="login-sub">Suis ton plan d'entraînement et visualise ta progression en temps réel.</p>
       <a href="/auth/strava" class="btn-strava">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/></svg>
-        Connecter Strava
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/></svg>
+        Connecter avec Strava
       </a>
       <div id="login-error" class="login-error hidden">Connexion refusée. <a href="/auth/strava">Réessayer</a></div>
     </div>
   </div>
 
-  <!-- ── Dashboard principal ── -->
-  <div id="screen-dashboard" class="screen hidden">
+  <!-- ══ APP PRINCIPALE ══ -->
+  <div id="screen-app" class="screen hidden">
 
-    <header class="header">
-      <div class="header-left">
-        <span class="header-name" id="athlete-name">—</span>
-        <span class="header-tag">10km · sub 40</span>
-      </div>
-      <div class="header-right">
-        <div class="race-countdown">
-          <span class="countdown-num" id="days-count">—</span>
-          <span class="countdown-label">jours</span>
+    <!-- Sidebar -->
+    <nav class="sidebar">
+      <div class="sidebar-top">
+        <div class="sidebar-brand">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="color:var(--accent)"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/></svg>
         </div>
-        <button class="btn-refresh" id="btn-refresh" title="Actualiser">
+        <nav class="sidebar-nav">
+          <button class="nav-item active" data-page="home" onclick="goPage('home')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            <span>Accueil</span>
+          </button>
+          <button class="nav-item" data-page="plan" onclick="goPage('plan')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <span>Plan</span>
+          </button>
+          <button class="nav-item" data-page="history" onclick="goPage('history')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            <span>Historique</span>
+          </button>
+          <button class="nav-item" data-page="runs" onclick="goPage('runs')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span>Sorties</span>
+          </button>
+        </nav>
+      </div>
+      <div class="sidebar-bottom">
+        <div class="sidebar-athlete" id="sidebar-athlete">
+          <div class="athlete-avatar" id="athlete-avatar">—</div>
+          <div class="athlete-info">
+            <div class="athlete-name" id="athlete-name">—</div>
+            <div class="athlete-sub">Sub 40 · S<span id="sidebar-week">—</span></div>
+          </div>
+        </div>
+        <button class="btn-refresh" id="btn-refresh" title="Actualiser" onclick="refreshData()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
         </button>
       </div>
-    </header>
+    </nav>
 
-    <!-- Statistiques avec toggle hebdo / mensuel -->
-    <section class="section-current">
-      <div class="section-label-row">
-        <span>Statistiques · <span id="current-week-label">S—</span></span>
-        <div class="toggle-period">
-          <button class="toggle-btn active" id="btn-hebdo" onclick="setPeriod('hebdo')">Semaine</button>
-          <button class="toggle-btn" id="btn-mensuel" onclick="setPeriod('mensuel')">Mois</button>
+    <!-- Contenu principal -->
+    <main class="main-content">
+
+      <!-- ── PAGE HOME ── -->
+      <div id="page-home" class="page active">
+
+        <!-- Hero : countdown + semaine -->
+        <div class="hero-section">
+          <div class="hero-countdown">
+            <div class="countdown-big" id="days-count">—</div>
+            <div class="countdown-label">jours avant la course</div>
+          </div>
+          <div class="hero-divider"></div>
+          <div class="hero-week">
+            <div class="week-badge" id="hero-week-badge">S—</div>
+            <div class="week-phase" id="hero-week-phase">—</div>
+            <div class="week-note" id="hero-week-note">—</div>
+          </div>
+        </div>
+
+        <!-- Toggle hebdo / mensuel -->
+        <div class="period-toggle-wrap">
+          <div class="period-toggle">
+            <button class="period-btn active" id="btn-hebdo" onclick="setPeriod('hebdo')">Cette semaine</button>
+            <button class="period-btn" id="btn-mensuel" onclick="setPeriod('mensuel')">Ce mois</button>
+          </div>
+          <div class="period-hint" id="period-hint"></div>
+        </div>
+
+        <!-- Stats cards -->
+        <div class="stats-grid">
+          <div class="stat-card stat-card-main">
+            <div class="stat-val" id="cur-km">—</div>
+            <div class="stat-name">km réalisés</div>
+            <div class="stat-target" id="cur-km-target">— prévu</div>
+            <div class="stat-bar"><div class="stat-bar-fill" id="prog-km"></div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-val" id="cur-runs">—</div>
+            <div class="stat-name">sorties</div>
+            <div class="stat-target" id="cur-runs-target">— prévues</div>
+            <div class="stat-bar"><div class="stat-bar-fill" id="prog-runs"></div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-val" id="cur-pace">—</div>
+            <div class="stat-name">allure moy.</div>
+            <div class="stat-target">cible ≤ 4:00</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-val" id="cur-hr">—</div>
+            <div class="stat-name">FC moyenne</div>
+            <div class="stat-target">zone 2–4</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-val" id="cur-time">—</div>
+            <div class="stat-name">temps total</div>
+            <div class="stat-target">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-val" id="cur-elev">—</div>
+            <div class="stat-name">dénivelé</div>
+            <div class="stat-target">cumulé</div>
+          </div>
+        </div>
+
+        <!-- Graphique progression -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Progression</span>
+            <span class="chart-legend-wrap">
+              <span class="dot dot-real"></span>Réel
+              <span class="dot dot-plan"></span>Plan
+            </span>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="chart-progress" height="140"></canvas>
+          </div>
+        </div>
+
+        <!-- Séances de la semaine avec matching Strava -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Séances de la semaine</span>
+            <span class="card-sub" id="seances-week-label">S—</span>
+          </div>
+          <div id="seances-matching-list"></div>
+        </div>
+
+      </div>
+
+      <!-- ── PAGE PLAN ── -->
+      <div id="page-plan" class="page hidden">
+        <div class="page-header">
+          <h1 class="page-title">Programme · 15 semaines</h1>
+          <p class="page-desc">Plan sub 40 · 10km · 11 octobre 2026</p>
+        </div>
+        <div class="plan-phases">
+          <div class="phase-tag phase-reprise">Reprise S1–S5</div>
+          <div class="phase-tag phase-developpement">Développement S6–S11</div>
+          <div class="phase-tag phase-recuperation">Récupération S8·S12</div>
+          <div class="phase-tag phase-specifique">Spécifique S13</div>
+          <div class="phase-tag phase-affutage">Affûtage S14–S15</div>
+        </div>
+        <div class="programme-list" id="programme-list"></div>
+      </div>
+
+      <!-- ── PAGE HISTORIQUE ── -->
+      <div id="page-history" class="page hidden">
+        <div class="page-header">
+          <h1 class="page-title">Historique</h1>
+          <p class="page-desc">Toutes tes semaines depuis le début du plan</p>
+        </div>
+        <div class="card">
+          <div class="history-table-wrap">
+            <table class="history-table">
+              <thead>
+                <tr>
+                  <th>Sem.</th><th>Phase</th><th>Sorties</th>
+                  <th>Km réalisés</th><th>Plan (km)</th><th>Écart</th>
+                  <th>Allure</th><th>FC</th><th>Dénivelé</th>
+                </tr>
+              </thead>
+              <tbody id="history-body"></tbody>
+            </table>
+          </div>
         </div>
       </div>
-      <div class="cards-row" id="cards-current">
-        <div class="metric-card">
-          <div class="metric-val" id="cur-km">—</div>
-          <div class="metric-name">km réalisés</div>
-          <div class="metric-target" id="cur-km-target">— prévu</div>
-          <div class="progress-bar"><div class="progress-fill" id="prog-km"></div></div>
+
+      <!-- ── PAGE SORTIES ── -->
+      <div id="page-runs" class="page hidden">
+        <div class="page-header">
+          <h1 class="page-title">Dernières sorties</h1>
+          <p class="page-desc">Toutes tes activités course depuis janvier 2026</p>
         </div>
-        <div class="metric-card">
-          <div class="metric-val" id="cur-runs">—</div>
-          <div class="metric-name">sorties</div>
-          <div class="metric-target" id="cur-runs-target">— prévues</div>
-          <div class="progress-bar"><div class="progress-fill" id="prog-runs"></div></div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-val" id="cur-pace">—</div>
-          <div class="metric-name">allure moy.</div>
-          <div class="metric-target">cible ≤ 4:00</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-val" id="cur-hr">—</div>
-          <div class="metric-name">FC moy. (bpm)</div>
-          <div class="metric-target">zone 2–4</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-val" id="cur-time">—</div>
-          <div class="metric-name">temps total</div>
-          <div class="metric-target">—</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-val" id="cur-elev">—</div>
-          <div class="metric-name">dénivelé (m)</div>
-          <div class="metric-target">cumulé</div>
-        </div>
+        <div class="runs-list" id="runs-list"></div>
       </div>
-      <div class="plan-note" id="plan-note"></div>
-    </section>
 
-    <!-- Graphique -->
-    <section class="section-chart">
-      <div class="section-label">Progression · km/semaine <span class="chart-legend"><span class="dot dot-real"></span>Réel <span class="dot dot-plan"></span>Plan</span></div>
-      <div class="chart-wrap">
-        <canvas id="chart-progress" height="160"></canvas>
-      </div>
-    </section>
-
-    <!-- Programme interactif -->
-    <section class="section-programme">
-      <div class="section-label">Programme · 15 semaines</div>
-      <div class="programme-list" id="programme-list"></div>
-    </section>
-
-    <!-- Historique -->
-    <section class="section-history">
-      <div class="section-label">Historique des semaines</div>
-      <div class="history-table-wrap">
-        <table class="history-table" id="history-table">
-          <thead>
-            <tr>
-              <th>Sem.</th><th>Phase</th><th>Sorties</th><th>Km réalisés</th>
-              <th>Plan (km)</th><th>Écart</th><th>Allure</th><th>FC</th><th>Dénivelé</th>
-            </tr>
-          </thead>
-          <tbody id="history-body"></tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- Dernières sorties -->
-    <section class="section-runs">
-      <div class="section-label">Dernières sorties</div>
-      <div class="runs-list" id="runs-list"></div>
-    </section>
-
-    <div class="cache-hint" id="cache-hint"></div>
+    </main>
   </div>
+
+  <div class="toast hidden" id="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="app.js"></script>
