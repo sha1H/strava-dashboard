@@ -396,3 +396,190 @@ button { cursor: pointer; font-family: var(--font); }
   color: var(--text-2);
   line-height: 1.6;
 }
+
+/* ── Analyse par séance ───────────────────────────────────────────────────── */
+.seance-analysis-block {
+  border-top: 1px solid var(--border);
+  background: var(--bg-2);
+}
+
+.analysis-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 20px 10px 48px;
+  background: none;
+  border: none;
+  color: var(--text-3);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.12s;
+}
+.analysis-toggle:hover { color: var(--text-2); }
+.analysis-toggle svg { transition: transform 0.2s ease; flex-shrink: 0; }
+
+.analysis-obs-list { padding: 0 20px 12px 48px; display: flex; flex-direction: column; gap: 8px; }
+
+.analysis-obs-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border-left: 3px solid;
+  background: var(--bg-1);
+}
+
+.obs-icon {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  flex-shrink: 0;
+  margin-top: 1px;
+  min-width: 14px;
+}
+
+.obs-text {
+  font-size: 12px;
+  color: var(--text-2);
+  line-height: 1.6;
+}
+
+/* ── Bannière proposition d'ajustement ───────────────────────────────────── */
+.proposal-banner {
+  border-top: 1px solid var(--border);
+  background: rgba(252,76,2,0.04);
+  padding: 14px 20px 14px 48px;
+}
+
+.proposal-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.proposal-icon { font-size: 14px; }
+
+.proposal-title {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--accent);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.proposal-item {
+  background: var(--bg-1);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin-bottom: 8px;
+}
+.proposal-item:last-child { margin-bottom: 0; }
+
+.proposal-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-1);
+  margin-bottom: 3px;
+}
+
+.proposal-detail {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+
+.proposal-reason {
+  font-size: 12px;
+  color: var(--text-2);
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+.proposal-actions { display: flex; gap: 8px; }
+
+.proposal-btn {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.proposal-btn:hover { opacity: 0.85; }
+.proposal-accept { background: var(--accent); color: #fff; }
+.proposal-refuse { background: var(--bg-2); color: var(--text-2); border: 1px solid var(--border-2); }
+
+/* ── Badges plan adaptatif ───────────────────────────────────────────────── */
+.badge-modified {
+  font-family: var(--mono);
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: rgba(252,76,2,0.12);
+  color: var(--accent);
+  letter-spacing: 0.05em;
+}
+
+.btn-reset-week {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-3);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 3px 8px;
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s;
+}
+.btn-reset-week:hover { color: var(--text-1); border-color: var(--border-2); }
+
+.coach-note {
+  border-left-color: var(--accent) !important;
+  color: var(--text-1) !important;
+}
+
+.seance-modified { border-left-width: 3px; }
+
+/* ── Checkbox manuelle ───────────────────────────────────────────────────── */
+.manual-check-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-2);
+}
+.manual-check { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
+
+/* ── Séances matching row ────────────────────────────────────────────────── */
+.seance-match-item {
+  border-bottom: 1px solid var(--border);
+  transition: background 0.12s;
+}
+.seance-match-item:last-child { border-bottom: none; }
+.seance-match-item:hover { background: rgba(255,255,255,0.01); }
+
+.seance-match-num { font-family: var(--mono); font-size: 10px; color: var(--text-3); min-width: 20px; }
+.seance-match-title { font-size: 13px; font-weight: 500; color: var(--text-1); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 3px; }
+.seance-match-target { font-size: 12px; color: var(--text-2); }
+.seance-type-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+.seance-status { font-family: var(--mono); font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; padding: 2px 6px; border-radius: 3px; }
+.status-done { background: var(--green-dim); color: var(--green); }
+.status-todo { background: var(--accent-dim); color: var(--accent); }
+.status-notrack { background: rgba(99,102,241,0.1); color: var(--indigo); }
+
+.cmp-ok   { color: var(--green); }
+.cmp-warn { color: var(--yellow); }
+.cmp-miss { color: var(--red); }
+.cmp-neutral { color: var(--text-2); }
