@@ -325,27 +325,38 @@ function analyzeRunDeep(run, seance, seanceIndex, weekNum) {
   }
 
   // ── 2. ANALYSE DE L'ALLURE ────────────────────────────────────────────────
-  if (realPaceSec && targetPace) {
-    const tolerance = 15; // 15 sec/km de tolérance
-    const diffSec   = realPaceSec - targetPace.mid;
-    
-    if (Math.abs(diffSec) <= tolerance) {
-      observations.push({ level:'good', text:`Allure dans la cible : ${fmt.pace(realPaceSec)}/km pour une cible ${seance.allure} (écart ${diffSec > 0 ? '+' : ''}${Math.round(diffSec)}s/km).` });
-    } else if (realPaceSec > targetPace.max + tolerance) {
-      const overSec = Math.round(realPaceSec - targetPace.max);
-      observations.push({ level:'warn', text:`Allure plus lente que prévu : ${fmt.pace(realPaceSec)}/km pour une cible de ${seance.allure} (+${overSec}s/km). Peut indiquer de la fatigue résiduelle ou une mauvaise journée.` });
-      if (seance.type === 'fractionne' || seance.type === 'tempo') {
-        adjustments.push({ type:'allure', direction:'down', text:`Revoir l'allure cible de la prochaine séance ${seance.type === 'fractionne' ? 'fractionnée' : 'tempo'} à ${fmt.pace(targetPace.mid + 10)}/km pour travailler à ton niveau réel.` });
+  if (realPaceSec) {
+    if (targetPace) {
+      const tolerance = 15;
+      const diffSec   = realPaceSec - targetPace.mid;
+      if (Math.abs(diffSec) <= tolerance) {
+        observations.push({ level:'good', text:`Allure dans la cible : ${fmt.pace(realPaceSec)}/km pour une cible ${seance.allure} (écart ${diffSec > 0 ? '+' : ''}${Math.round(diffSec)}s/km). Parfait.` });
+      } else if (realPaceSec > targetPace.max + tolerance) {
+        const overSec = Math.round(realPaceSec - targetPace.max);
+        observations.push({ level:'warn', text:`Allure plus lente que prévu : ${fmt.pace(realPaceSec)}/km pour une cible de ${seance.allure} (+${overSec}s/km). Possible fatigue ou mauvaise journée.` });
+        if (seance.type === 'fractionne' || seance.type === 'tempo') {
+          adjustments.push({ type:'allure', direction:'down', text:`Revoir l'allure cible de la prochaine séance ${seance.type === 'fractionne' ? 'fractionnée' : 'tempo'} à ${fmt.pace(targetPace.mid + 10)}/km pour coller à ton niveau réel.` });
+        }
+      } else if (realPaceSec < targetPace.min - tolerance) {
+        const underSec = Math.round(targetPace.min - realPaceSec);
+        observations.push({ level:'good', text:`Allure au-dessus de la cible : ${fmt.pace(realPaceSec)}/km (${underSec}s/km plus vite que prévu). Excellente forme — continue.` });
+        if (seance.type === 'fractionne' || seance.type === 'tempo') {
+          adjustments.push({ type:'allure', direction:'up', text:`Potentiel de progression détecté. Légère hausse de l'allure cible suggérée sur la prochaine séance de même type.` });
+        }
       }
-    } else if (realPaceSec < targetPace.min - tolerance) {
-      const underSec = Math.round(targetPace.min - realPaceSec);
-      observations.push({ level:'good', text:`Allure au-dessus de la cible : ${fmt.pace(realPaceSec)}/km pour une cible de ${seance.allure} (${underSec}s/km plus vite). Excellente forme.` });
-      if (seance.type === 'fractionne' || seance.type === 'tempo') {
-        adjustments.push({ type:'allure', direction:'up', text:`Potentiel de progression détecté. Proposer une légère hausse de l'allure cible sur la prochaine séance de même type (+5 à +10s/km plus vite).` });
+    } else {
+      // Allure non parseable (VMA%, EF+strides, etc.) → analyse contextuelle selon type
+      observations.push({ level:'info', text:`Allure moyenne : ${fmt.pace(realPaceSec)}/km. (Séance de type "${seance.type}" — évaluation sur FC et volume car allure cible non fixe.)` });
+      if (seance.type === 'endurance' && realPaceSec < 300) {
+        observations.push({ level:'warn', text:`${fmt.pace(realPaceSec)}/km semble trop rapide pour une séance d'endurance fondamentale. L'EF doit rester conversationnelle — essaie de rester au-dessus de 5:30/km.` });
+      }
+      if (seance.type === 'fractionne') {
+        observations.push({ level:'info', text:`Séance fractionnée à ${fmt.pace(realPaceSec)}/km de moyenne (récupérations incluses). Vérifie que tes répétitions étaient nettement plus rapides que cette moyenne.` });
+      }
+      if (seance.type === 'recuperation' && realPaceSec < 330) {
+        observations.push({ level:'warn', text:`${fmt.pace(realPaceSec)}/km, c'est un peu vif pour une séance de récupération. La récupération doit être ultra-facile pour remplir son rôle.` });
       }
     }
-  } else if (realPaceSec && !targetPace) {
-    observations.push({ level:'info', text:`Allure moyenne : ${fmt.pace(realPaceSec)}/km (séance sans cible d'allure précise).` });
   }
 
   // ── 3. ANALYSE CARDIAQUE ──────────────────────────────────────────────────
@@ -834,7 +845,23 @@ function acceptProposal(seanceIdx, proposalIdx) {
   adaptivePlan.applyAdjustment(p.weekNum, p.patch);
   document.getElementById(`proposal-banner-${seanceIdx}`)?.remove();
   showToast(`✓ Ajustement appliqué sur S${p.weekNum}`);
-  renderProgramme(); // re-render le plan pour refléter les changements
+
+  // Re-render la page Plan (sidebar) avec le plan mis à jour
+  renderProgramme();
+
+  // Met aussi à jour globalData.plan pour que l'accueil reflète les nouveaux km
+  if (globalData) {
+    const updatedPlan = computePlanKm(adaptivePlan.get());
+    globalData.plan = globalData.plan.map(pp => {
+      const updated = updatedPlan.find(x => x.week === pp.week);
+      return updated ? { ...pp, targetKm: updated.targetKm, notes: updated.notes, noteCoach: updated.noteCoach } : pp;
+    });
+    // Met à jour les stats de la semaine en cours si c'est la semaine ajustée
+    if (p.weekNum === globalData.currentPlanWeek) {
+      renderStats(globalData);
+      renderHero(globalData);
+    }
+  }
 }
 
 function refuseProposal(seanceIdx, proposalIdx) {
